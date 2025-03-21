@@ -14,7 +14,7 @@ class TranscriberConfig(BaseModel):
     
     @validator('type')
     def valid_transcriber_type(cls, v):
-        valid_types = ["whisper_local", "whisper_api", "deepgram", "custom"]
+        valid_types = ["whisper_local", "whisper_api", "deepgram", "custom", "mock"]
         if v not in valid_types:
             raise ValueError(f"Transcriber type must be one of {valid_types}")
         return v
