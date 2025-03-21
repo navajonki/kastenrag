@@ -35,6 +35,22 @@ A system for processing audio recordings into retrievable atomic knowledge units
    docker-compose up -d neo4j
    ```
 
+### Testing Phase 1
+
+To test the Phase 1 implementation (framework setup):
+
+1. Run the test script:
+   ```
+   python test_output.py
+   ```
+
+This will:
+- Create a test audio file
+- Set up the configuration and logging
+- Create and execute a pipeline with mock components
+- Display the resulting transcript and chunks
+- Show where logs are saved
+
 ### Configuration
 
 - Copy and modify the default configuration file:
