@@ -2,127 +2,94 @@
 
 A system for processing audio recordings into retrievable atomic knowledge units.
 
+## Overview
+
+KastenRAG processes voice recordings into atomic, self-contained facts that can be searched and retrieved with high precision. The system follows a pipeline approach from audio transcription through atomic fact extraction, enrichment, storage, and retrieval.
+
+## Documentation
+
+- [Implementation Plan](implementation_plan.md) - Detailed phased approach
+- [Development Guide](DEVELOPMENT.md) - Environment setup and testing
+- [PRD Overview](langchain-prd-overview.md) - Product requirements
+
 ## Setup Instructions
 
-### Prerequisites
+For detailed setup and development instructions, please refer to the [Development Guide](DEVELOPMENT.md).
 
-- Python 3.11 or higher
-- Docker and Docker Compose (for Neo4j and containerized development)
-- FFmpeg (for audio processing)
+### Quick Start: Docker Environment (Recommended)
 
-### Installation
+1. Clone the repository and build the environment:
+   ```bash
+   git clone https://github.com/yourusername/kastenrag.git
+   cd kastenrag
+   docker-compose build
+   docker-compose up -d
+   ```
+
+2. Test the Phase 1 implementation:
+   ```bash
+   docker-compose exec app python test_output.py
+   ```
+
+### Alternative: Local Virtual Environment
 
 1. Clone the repository:
-   ```
+   ```bash
    git clone https://github.com/yourusername/kastenrag.git
    cd kastenrag
    ```
 
-2. Create a virtual environment and install dependencies:
-   ```
+2. Create and activate a virtual environment:
+   ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    pip install -e .
    ```
 
-3. Start the Neo4j database using Docker Compose (optional for Phase 1):
-   ```
-   docker-compose up -d neo4j
-   ```
-
-### Testing Phase 1
-
-To test the Phase 1 implementation (framework setup):
-
-1. Run the test script with the provided shell script (this creates a virtual environment automatically):
-   ```
-   ./test_phase1.sh
-   ```
-
-   Or manually with an existing virtual environment:
-   ```
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+3. Test the Phase 1 implementation:
+   ```bash
    python test_output.py
    ```
 
-This will:
-- Create a test audio file
-- Set up the configuration and logging
-- Create and execute a pipeline with mock components
-- Display the resulting transcript and chunks
-- Show where logs are saved
+## Project Structure
 
-### Configuration
+```
+kastenrag/
+├── kastenrag/                # Main package
+│   ├── transcribers/         # Audio transcription components
+│   ├── chunkers/             # Text chunking components
+│   ├── llm/                  # LLM integration components
+│   ├── enrichers/            # Metadata enrichment components
+│   ├── validators/           # Validation components
+│   ├── storage/              # Storage components (vector, graph)
+│   ├── retrieval/            # Retrieval components
+│   ├── generators/           # Response generation components
+│   ├── api/                  # API endpoints
+│   ├── config/               # Configuration system
+│   ├── utils/                # Utility functions
+│   └── pipeline/             # Pipeline orchestration
+├── tests/                    # Test suite
+├── docs/                     # Documentation
+├── data/                     # Data directory
+├── scripts/                  # Utility scripts
+├── Dockerfile                # Docker definition
+└── docker-compose.yml        # Docker composition
+```
 
-- Copy and modify the default configuration file:
-  ```
-  cp config/default_config.yaml config/my_config.yaml
-  ```
+## Implementation Status
 
-- Edit `config/my_config.yaml` with your preferred settings.
+The system is being built in phases following the data flow:
 
-### Preparing Test Data
-
-- Run the test data preparation script:
-  ```
-  source venv/bin/activate  # On Windows: venv\Scripts\activate
-  python -m scripts.prepare_test_data
-  ```
-
-### Running the System
-
-- Process an audio file:
-  ```
-  source venv/bin/activate  # On Windows: venv\Scripts\activate
-  python -m kastenrag.app --config config/my_config.yaml --audio data/sample_audio/sample1.mp3
-  ```
-
-- Results will be stored in the configured output directory.
-
-## Development
-
-### Running Tests
-
-- Run the test suite:
-  ```
-  source venv/bin/activate  # On Windows: venv\Scripts\activate
-  pytest
-  ```
-
-- Run with coverage:
-  ```
-  source venv/bin/activate  # On Windows: venv\Scripts\activate
-  pytest --cov=kastenrag
-  ```
-
-### Docker Development Environment
-
-- Build and start the development container:
-  ```
-  docker-compose up -d app
-  ```
-
-- Run commands inside the container:
-  ```
-  docker-compose exec app bash
-  ```
-
-## Implementation Plan
-
-The system is built in phases following the data flow from audio input to retrieval:
-
-1. Development Environment and Framework Setup
-2. Audio Transcription Implementation
-3. Text Chunking Pipeline
-4. LLM-Powered Atomic Fact Extraction
-5. Metadata Enrichment and Topic Classification
-6. Quality Assurance and Validation
-7. Database Integration and Storage
-8. Retrieval System Implementation
-9. Response Generation and LLM Integration
-10. Performance Optimization and Scaling
-11. User Interface and API Development
-12. Testing, Documentation, and Deployment
-
-See the [Implementation Plan](implementation_plan.md) for details.
+- [x] Phase 1: Development Environment and Framework Setup
+- [ ] Phase 2: Audio Transcription Implementation
+- [ ] Phase 3: Text Chunking Pipeline
+- [ ] Phase 4: LLM-Powered Atomic Fact Extraction
+- [ ] Phase 5: Metadata Enrichment and Topic Classification
+- [ ] Phase 6: Quality Assurance and Validation
+- [ ] Phase 7: Database Integration and Storage
+- [ ] Phase 8: Retrieval System Implementation
+- [ ] Phase 9: Response Generation and LLM Integration
+- [ ] Phase 10: Performance Optimization and Scaling
+- [ ] Phase 11: User Interface and API Development
+- [ ] Phase 12: Testing, Documentation, and Deployment

@@ -267,7 +267,57 @@ This implementation plan outlines the development approach for a Voice Note Taki
 - ✅ User and developer guides provide clear instructions
 - ✅ Deployment configurations work in target environments
 
+## Development Environment
+
+We use Docker as the primary development environment to ensure consistency:
+
+1. **Docker-based Development:**
+   - All dependencies configured in Dockerfile and docker-compose.yml
+   - Neo4j and other services managed through docker-compose
+   - Consistent environment across all development machines
+   - CI/CD pipelines use the same Docker configuration
+
+2. **Local Development Option:**
+   - Python virtual environment for lightweight development
+   - Documented requirements for local system dependencies
+
+Detailed setup instructions are provided in [DEVELOPMENT.md](DEVELOPMENT.md).
+
 ## Verification Methods
+
+### Test Organization
+
+Tests are organized following pytest's recommended structure:
+
+```
+tests/
+├── unit/                 # Unit tests for individual components
+│   ├── test_transcribers.py
+│   ├── test_chunkers.py
+│   └── ...
+├── integration/          # Tests for component interactions
+│   ├── test_transcription_to_chunking.py
+│   └── ...
+├── e2e/                  # End-to-end pipeline tests
+│   ├── test_pipeline_flow.py
+│   └── ...
+├── conftest.py           # Shared pytest fixtures
+└── test_data/            # Test data files
+```
+
+### Testing Workflow
+
+For each phase of implementation:
+
+1. Write tests first (test-driven development)
+2. Implement the feature
+3. Verify tests pass in the Docker environment
+4. Run performance benchmarks where applicable
+
+All tests can be run with a single command in the Docker environment:
+```
+docker-compose exec app pytest
+```
 
 ### Automated Testing
 
