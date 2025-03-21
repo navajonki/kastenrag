@@ -23,14 +23,10 @@ A system for processing audio recordings into retrievable atomic knowledge units
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
-   ```
-
-3. Install the package in development mode:
-   ```
    pip install -e .
    ```
 
-4. Start the Neo4j database using Docker Compose:
+3. Start the Neo4j database using Docker Compose (optional for Phase 1):
    ```
    docker-compose up -d neo4j
    ```
@@ -39,8 +35,14 @@ A system for processing audio recordings into retrievable atomic knowledge units
 
 To test the Phase 1 implementation (framework setup):
 
-1. Run the test script:
+1. Run the test script with the provided shell script (this creates a virtual environment automatically):
    ```
+   ./test_phase1.sh
+   ```
+
+   Or manually with an existing virtual environment:
+   ```
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    python test_output.py
    ```
 
@@ -64,6 +66,7 @@ This will:
 
 - Run the test data preparation script:
   ```
+  source venv/bin/activate  # On Windows: venv\Scripts\activate
   python -m scripts.prepare_test_data
   ```
 
@@ -71,6 +74,7 @@ This will:
 
 - Process an audio file:
   ```
+  source venv/bin/activate  # On Windows: venv\Scripts\activate
   python -m kastenrag.app --config config/my_config.yaml --audio data/sample_audio/sample1.mp3
   ```
 
@@ -82,11 +86,13 @@ This will:
 
 - Run the test suite:
   ```
+  source venv/bin/activate  # On Windows: venv\Scripts\activate
   pytest
   ```
 
 - Run with coverage:
   ```
+  source venv/bin/activate  # On Windows: venv\Scripts\activate
   pytest --cov=kastenrag
   ```
 
