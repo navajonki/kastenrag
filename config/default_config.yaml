@@ -1,0 +1,56 @@
+# Default configuration for the KastenRAG system
+
+# Transcription configuration
+transcriber:
+  type: "whisper_local"
+  model_name: "medium"
+  language: "en"
+  device: "cpu"
+
+# Chunking configuration
+chunker:
+  window_size: 1000
+  overlap: 100
+  boundary_rules:
+    - "sentence"
+    - "paragraph"
+  first_pass_prompt_template: "Given the following text, identify all atomic facts:\n\n{text}\n\nAtomic facts:"
+  second_pass_prompt_template: "For each atomic fact, replace all pronouns with their full entity references:\n\n{facts}\n\nSelf-contained facts:"
+
+# Embedding configuration
+embedding:
+  model_name: "text-embedding-ada-002"
+  dimensions: 1536
+  batch_size: 8
+
+# Vector store configuration
+vector_store:
+  type: "chroma"
+  persist_directory: "./data/vector_store"
+  collection_name: "kastenrag"
+
+# Graph store configuration
+graph_store:
+  type: "neo4j"
+  uri: "bolt://localhost:7687"
+  username: "neo4j"
+  password: "password"
+  database: "neo4j"
+
+# LLM configuration
+llm:
+  provider: "openai"
+  model_name: "gpt-4"
+  temperature: 0.0
+  max_tokens: 1024
+  streaming: false
+
+# Logging configuration
+logging:
+  level: "INFO"
+  log_dir: "./logs"
+  log_llm_interactions: true
+  log_performance: true
+
+# Output directory
+output_dir: "./output"
