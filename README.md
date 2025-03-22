@@ -4,7 +4,7 @@ A system for processing audio recordings into retrievable atomic knowledge units
 
 ## Overview
 
-KastenRAG processes voice recordings into atomic, self-contained facts that can be searched and retrieved with high precision. The system follows a pipeline approach from audio transcription through atomic fact extraction, enrichment, storage, and retrieval.
+KastenRAG processes voice recordings into atomic, self-contained facts that can be searched and retrieved with high precision. The system follows a pipeline approach from text chunking through storage, retrieval, and response generation, with audio transcription capabilities integrated later in development.
 
 ## Documentation
 
@@ -57,14 +57,13 @@ For detailed setup and development instructions, please refer to the [Developmen
 ```
 kastenrag/
 ├── kastenrag/                # Main package
-│   ├── transcribers/         # Audio transcription components
 │   ├── chunkers/             # Text chunking components
-│   ├── llm/                  # LLM integration components
 │   ├── enrichers/            # Metadata enrichment components
 │   ├── validators/           # Validation components
 │   ├── storage/              # Storage components (vector, graph)
 │   ├── retrieval/            # Retrieval components
 │   ├── generators/           # Response generation components
+│   ├── transcribers/         # Audio transcription components (later phase)
 │   ├── api/                  # API endpoints
 │   ├── config/               # Configuration system
 │   ├── utils/                # Utility functions
@@ -79,17 +78,15 @@ kastenrag/
 
 ## Implementation Status
 
-The system is being built in phases following the data flow:
+The system is being built in phases:
 
 - [x] Phase 1: Development Environment and Framework Setup
-- [ ] Phase 2: Audio Transcription Implementation
-- [ ] Phase 3: Text Chunking Pipeline
-- [ ] Phase 4: LLM-Powered Atomic Fact Extraction
-- [ ] Phase 5: Metadata Enrichment and Topic Classification
-- [ ] Phase 6: Quality Assurance and Validation
-- [ ] Phase 7: Database Integration and Storage
-- [ ] Phase 8: Retrieval System Implementation
-- [ ] Phase 9: Response Generation and LLM Integration
-- [ ] Phase 10: Performance Optimization and Scaling
-- [ ] Phase 11: User Interface and API Development
-- [ ] Phase 12: Testing, Documentation, and Deployment
+- [ ] Phase 2: Atomic Chunking Implementation
+- [ ] Phase 3: Vector Database Integration
+- [ ] Phase 4: Graph Database Integration
+- [ ] Phase 5: Hybrid Search Implementation
+- [ ] Phase 6: Response Generation
+- [ ] Phase 7: Audio Transcription Integration
+- [ ] Phase 8: Performance Optimization and Scaling
+- [ ] Phase 9: User Interface and API Development
+- [ ] Phase 10: Testing, Documentation, and Deployment

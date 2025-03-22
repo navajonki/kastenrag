@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan outlines the development approach for a Voice Note Taking Retrieval-Augmented Generation (RAG) system. The system will process audio recordings into transcribed text, segment the text into atomic self-contained chunks, enrich these chunks with metadata, store them in vector and graph databases, and provide efficient retrieval mechanisms.
+This implementation plan outlines the development approach for a Voice Note Taking Retrieval-Augmented Generation (RAG) system. The system will process existing transcribed text into atomic self-contained chunks, enrich these chunks with metadata, store them in vector and graph databases, and provide efficient retrieval mechanisms through hybrid search capabilities.
 
 ## Implementation Phases
 
@@ -27,157 +27,102 @@ This implementation plan outlines the development approach for a Voice Note Taki
 - ✅ Logging system captures all required metrics and interactions
 - ✅ Test framework is operational with basic tests
 
-### Phase 2: Audio Transcription Implementation
+### Phase 2: Atomic Chunking Implementation
 
 **Goals:**
-- Implement audio file processing and transcription
-- Create transcription service integrations
-- Develop transcript post-processing utilities
-
-**Tasks:**
-1. Implement audio file loaders for multiple formats (WAV, MP3, M4A)
-2. Create adapters for transcription services (Whisper local, OpenAI API)
-3. Implement speaker diarization for multi-speaker recordings
-4. Develop transcript cleaning and normalization utilities
-5. Create timestamp extraction and synchronization
-
-**Exit Criteria:**
-- ✅ System successfully loads and processes multiple audio formats
-- ✅ Transcription services correctly convert speech to text
-- ✅ Speaker identification works with >80% accuracy
-- ✅ Transcripts include accurate timestamps
-- ✅ Normalized transcripts maintain original meaning and context
-
-### Phase 3: Text Chunking Pipeline
-
-**Goals:**
-- Implement initial text segmentation with sliding window approach
-- Develop boundary detection for natural segmentation
-- Create preliminary chunking strategy
+- Process existing transcripts into atomic, self-contained chunks
+- Implement LLM-powered chunking strategies
+- Create entity resolution and information preservation system
 
 **Tasks:**
 1. Implement sliding window text splitter with configurable overlap
 2. Create natural boundary detection (sentence, paragraph, topic)
 3. Develop text normalization and cleaning utilities
-4. Implement basic entity extraction for named entity identification
-5. Create pipeline orchestrator to manage the chunking workflow
+4. Design and test prompt templates for atomic fact extraction
+5. Implement LLM chain for two-pass atomic fact extraction
+6. Develop pronoun-to-entity resolution for self-contained facts
+7. Implement validation checks for atomic fact quality
+8. Create topic classification and entity relationship extraction
 
 **Exit Criteria:**
-- ✅ Sliding window chunker correctly segments text with configurable overlap
-- ✅ Natural boundary detection preserves semantic units
-- ✅ Text processing utilities normalize and clean input text
-- ✅ Basic entity recognition identifies main named entities with >80% accuracy
-- ✅ Chunking pipeline successfully processes test transcripts end-to-end
-
-### Phase 4: LLM-Powered Atomic Fact Extraction
-
-**Goals:**
-- Implement LLM-based atomic fact extraction
-- Develop two-pass approach for high-quality extraction
-- Create entity resolution system
-
-**Tasks:**
-1. Design and test prompt templates for atomic fact extraction
-2. Implement specialized prompts for entity resolution
-3. Create structured output parsers for LLM responses
-4. Develop LLM chain for two-pass atomic fact extraction
-5. Implement pronoun-to-entity resolution for self-contained facts
-6. Create validation checks for atomic fact quality
-
-**Exit Criteria:**
-- ✅ Prompt templates successfully extract atomic facts from sample content
-- ✅ Output parsers correctly structure LLM responses into required formats
+- ✅ System successfully processes existing transcripts into chunks
+- ✅ Chunks are atomic (one fact per chunk) and self-contained
 - ✅ Entity resolution replaces >95% of pronouns with full entity references
-- ✅ Two-pass extraction improves atomic fact quality versus single-pass
-- ✅ Validation system identifies and flags low-quality atomic chunks
-
-### Phase 5: Metadata Enrichment and Topic Classification
-
-**Goals:**
-- Implement topic classification and tagging
-- Develop entity relationship identification
-- Create confidence scoring for metadata
-
-**Tasks:**
-1. Design and implement topic classification using LLM and keyword extraction
-2. Create entity relationship extraction from atomic chunks
-3. Implement confidence scoring for entity and topic assignments
-4. Develop metadata enrichment pipeline for atomic chunks
-5. Implement hierarchical topic classification
-
-**Exit Criteria:**
+- ✅ Chunks maintain original meaning and context
 - ✅ Topic classification correctly categorizes >85% of chunks
-- ✅ Entity relationship extraction identifies meaningful relationships
-- ✅ Confidence scoring provides reliable metrics for metadata quality
-- ✅ Metadata enrichment pipeline adds all required metadata to chunks
-- ✅ System handles multi-level topic hierarchies correctly
+- ✅ Chunk quality metrics verify atomicity and self-containment
 
-### Phase 6: Quality Assurance and Validation
+### Phase 3: Vector Database Integration
 
 **Goals:**
-- Implement comprehensive validation system for atomic chunks
-- Create quality metrics for chunk assessment
-- Develop automated improvement system for low-quality chunks
+- Generate embeddings for atomic chunks
+- Implement vector database integration
+- Create semantic search capabilities
 
 **Tasks:**
-1. Implement self-containment verification using LLM
-2. Create atomicity validation to ensure each chunk contains exactly one fact
-3. Develop information preservation verification
-4. Implement automated chunk refinement for failing chunks
-5. Create quality metrics for chunk evaluation
-
-**Exit Criteria:**
-- ✅ Self-containment verification flags >90% of non-self-contained chunks
-- ✅ Atomicity validation correctly identifies chunks with multiple facts
-- ✅ Information preservation verification ensures factual accuracy
-- ✅ Chunk refinement system improves >80% of low-quality chunks
-- ✅ Quality metrics provide clear indicators of chunk quality
-
-### Phase 7: Database Integration and Storage
-
-**Goals:**
-- Implement vector database integration for semantic retrieval
-- Develop graph database schema and integration
-- Create exporters for different formats (Markdown, JSON)
-
-**Tasks:**
-1. Implement vector embedding generation for atomic chunks
+1. Implement embedding generation for chunks
 2. Develop vector database integration (Chroma)
-3. Create Neo4j schema for atomic chunks, entities, and relationships
-4. Implement graph database population from chunk metadata
-5. Develop Markdown exporter with YAML front matter
-6. Implement JSON export format for interoperability
+3. Create vector similarity search with filtering
+4. Implement metadata-based filtering
+5. Develop vector search optimization techniques
+6. Create performance benchmarks for vector search
 
 **Exit Criteria:**
-- ✅ Vector embeddings correctly represent semantic content of chunks
-- ✅ Vector database successfully stores and retrieves chunks by similarity
-- ✅ Graph database schema properly represents entities, topics, and relationships
-- ✅ Graph database population correctly creates and connects nodes
-- ✅ Export formats maintain all metadata and content integrity
+- ✅ Embeddings correctly represent semantic content of chunks
+- ✅ Vector database successfully stores chunks with metadata
+- ✅ Similarity search retrieves semantically relevant chunks
+- ✅ Search performance meets latency requirements
+- ✅ Filtering by metadata works correctly
+- ✅ Search results are properly ranked by relevance
 
-### Phase 8: Retrieval System Implementation
+### Phase 4: Graph Database Integration
 
 **Goals:**
-- Implement hybrid retrieval system
-- Develop query processing and decomposition
-- Create combined search across vector and graph databases
+- Design and implement graph schema for chunks, entities, and relationships
+- Develop graph database integration
+- Create graph traversal-based retrieval
 
 **Tasks:**
-1. Implement vector similarity search with filtering
-2. Develop graph traversal for relationship-based queries
-3. Create hybrid search combining vector and graph approaches
-4. Implement query decomposition for complex questions
-5. Develop query planning and optimization
-6. Create result ranking and relevance scoring
+1. Design Neo4j schema for chunks, entities, and relationships
+2. Implement graph database population from chunk metadata
+3. Create entity relationship extraction and normalization
+4. Develop graph traversal queries for relationship-based retrieval
+5. Implement entity resolution across chunks
+6. Create graph visualization utilities
 
 **Exit Criteria:**
-- ✅ Vector search retrieves semantically relevant chunks
-- ✅ Graph search finds relationship-based connections
-- ✅ Hybrid search combines results effectively
-- ✅ Query decomposition breaks complex questions into sub-queries
-- ✅ Results are properly ranked and scored for relevance
+- ✅ Graph database schema properly represents entities and relationships
+- ✅ Chunks and their metadata are correctly stored in the graph
+- ✅ Entity relationships are properly represented and connected
+- ✅ Graph traversal queries retrieve relevant chunks
+- ✅ Entity resolution works correctly across chunks
+- ✅ Graph visualization provides useful insights into relationships
 
-### Phase 9: Response Generation and LLM Integration
+### Phase 5: Hybrid Search Implementation
+
+**Goals:**
+- Implement hybrid search combining vector and graph approaches
+- Develop query processing and decomposition
+- Create result ranking and aggregation
+
+**Tasks:**
+1. Implement query processing and decomposition
+2. Create hybrid search combining vector and graph approaches
+3. Develop query routing to optimal search strategy
+4. Implement result ranking and aggregation
+5. Create confidence scoring for search results
+6. Develop evaluation framework for search quality
+7. Test multiple permutations (vector-only, graph-only, hybrid)
+
+**Exit Criteria:**
+- ✅ Query decomposition breaks complex questions into sub-queries
+- ✅ Hybrid search combines results from vector and graph databases
+- ✅ Result ranking produces more relevant results than single-strategy approaches
+- ✅ Search handles different query types appropriately
+- ✅ Evaluation framework properly assesses search quality
+- ✅ Multiple permutations demonstrate trade-offs between approaches
+
+### Phase 6: Response Generation
 
 **Goals:**
 - Implement retrieval-augmented generation
@@ -200,7 +145,30 @@ This implementation plan outlines the development approach for a Voice Note Taki
 - ✅ System produces different output formats as requested
 - ✅ Confidence scores reflect response reliability
 
-### Phase 10: Performance Optimization and Scaling
+### Phase 7: Audio Transcription Integration
+
+**Goals:**
+- Implement audio file processing and transcription
+- Create transcription service integrations
+- Develop transcript post-processing utilities
+
+**Tasks:**
+1. Implement audio file loaders for multiple formats (WAV, MP3, M4A)
+2. Create adapters for transcription services (Whisper local, OpenAI API)
+3. Implement speaker diarization for multi-speaker recordings
+4. Develop transcript cleaning and normalization utilities
+5. Create timestamp extraction and synchronization
+6. Integrate transcription with the chunking pipeline
+
+**Exit Criteria:**
+- ✅ System successfully loads and processes multiple audio formats
+- ✅ Transcription services correctly convert speech to text
+- ✅ Speaker identification works with >80% accuracy
+- ✅ Transcripts include accurate timestamps
+- ✅ Normalized transcripts maintain original meaning and context
+- ✅ End-to-end pipeline from audio to chunks works correctly
+
+### Phase 8: Performance Optimization and Scaling
 
 **Goals:**
 - Optimize end-to-end pipeline performance
@@ -221,7 +189,7 @@ This implementation plan outlines the development approach for a Voice Note Taki
 - ✅ Performance metrics show consistent processing times
 - ✅ Adaptive processing adjusts parameters based on content complexity
 
-### Phase 11: User Interface and API Development
+### Phase 9: User Interface and API Development
 
 **Goals:**
 - Create API endpoints for system interaction
@@ -244,7 +212,7 @@ This implementation plan outlines the development approach for a Voice Note Taki
 - ✅ Visualization tools display relationships effectively
 - ✅ Monitoring dashboard shows system performance metrics
 
-### Phase 12: Testing, Documentation, and Deployment
+### Phase 10: Testing, Documentation, and Deployment
 
 **Goals:**
 - Implement comprehensive testing suite
@@ -292,11 +260,11 @@ Tests are organized following pytest's recommended structure:
 ```
 tests/
 ├── unit/                 # Unit tests for individual components
-│   ├── test_transcribers.py
 │   ├── test_chunkers.py
+│   ├── test_vector_store.py
 │   └── ...
 ├── integration/          # Tests for component interactions
-│   ├── test_transcription_to_chunking.py
+│   ├── test_chunking_to_vector.py
 │   └── ...
 ├── e2e/                  # End-to-end pipeline tests
 │   ├── test_pipeline_flow.py
@@ -332,37 +300,33 @@ docker-compose exec app pytest
    - Test with realistic input data
 
 3. **End-to-End Tests:**
-   - Process sample recordings through the entire pipeline
+   - Process sample transcripts through the entire pipeline
    - Verify final output quality
    - Test retrieval and response generation
 
 ### Quality Metrics
 
-1. **Transcription Quality:**
-   - Word Error Rate (WER) for transcription accuracy
-   - Speaker identification accuracy
-   - Timestamp accuracy
-
-2. **Chunk Quality Assessment:**
+1. **Chunk Quality Assessment:**
    - Self-containment score: % of chunks that stand alone without context
    - Entity resolution accuracy: % of pronouns correctly replaced
    - Information preservation: % of original information maintained
    - Atomicity: % of chunks containing exactly one fact
 
-3. **Retrieval Performance:**
+2. **Retrieval Performance:**
    - Recall@K for retrieving relevant chunks
    - Precision@K for relevance of retrieved chunks
    - Mean Reciprocal Rank for ranking quality
+   - Response latency at different percentiles
 
-4. **Response Quality:**
+3. **Response Quality:**
    - Factual accuracy compared to source material
    - Relevance to query
    - Completeness of information
    - Citation accuracy
 
-5. **Processing Performance:**
-   - Throughput: audio minutes processed per hour
-   - Latency: time to process a recording
+4. **Processing Performance:**
+   - Throughput: words processed per minute
+   - Latency: time to process a transcript
    - Resource utilization: memory and CPU usage
 
 ## Implementation Schedule
@@ -370,32 +334,31 @@ docker-compose exec app pytest
 | Phase | Estimated Duration | Dependencies |
 |-------|-------------------|--------------|
 | Phase 1: Environment Setup | 1 week | None |
-| Phase 2: Audio Transcription | 2 weeks | Phase 1 |
-| Phase 3: Text Chunking | 2 weeks | Phase 2 |
-| Phase 4: Atomic Fact Extraction | 3 weeks | Phase 3 |
-| Phase 5: Metadata Enrichment | 2 weeks | Phase 4 |
-| Phase 6: Quality Assurance | 2 weeks | Phase 5 |
-| Phase 7: Database Integration | 2 weeks | Phase 6 |
-| Phase 8: Retrieval System | 2 weeks | Phase 7 |
-| Phase 9: Response Generation | 2 weeks | Phase 8 |
-| Phase 10: Performance Optimization | 2 weeks | Phase 9 |
-| Phase 11: UI and API | 2 weeks | Phase 10 |
-| Phase 12: Testing and Documentation | 2 weeks | Phase 11 |
+| Phase 2: Atomic Chunking | 3 weeks | Phase 1 |
+| Phase 3: Vector Database Integration | 2 weeks | Phase 2 |
+| Phase 4: Graph Database Integration | 2 weeks | Phase 2 |
+| Phase 5: Hybrid Search Implementation | 3 weeks | Phase 3, Phase 4 |
+| Phase 6: Response Generation | 2 weeks | Phase 5 |
+| Phase 7: Audio Transcription Integration | 2 weeks | Phase 2 |
+| Phase 8: Performance Optimization | 2 weeks | Phase 1-7 |
+| Phase 9: UI and API | 2 weeks | Phase 1-8 |
+| Phase 10: Testing and Documentation | 2 weeks | Phase 1-9 |
 
-**Total Estimated Duration:** 24 weeks
+**Total Estimated Duration:** 21 weeks
 
 ## Risk Management
 
 | Risk | Mitigation Strategy |
 |------|---------------------|
-| Transcription accuracy in noisy environments | Use multiple transcription services, implement human review for critical content |
 | LLM performance variability | Implement retry logic, use model versioning, cache successful responses |
 | Inaccurate entity resolution | Develop fallback rules-based approach, implement confidence thresholds |
 | Processing performance issues | Profile early, implement batch processing, optimize critical paths |
 | Topic classification inconsistency | Create standardized topic taxonomy, use hierarchical classification |
 | Over-atomization of related concepts | Implement post-processing to identify and link related atomic facts |
-| Scalability challenges with large datasets | Design for horizontal scaling, implement efficient indexing, use batch processing |
+| Hybrid search complexity | Start with simple integration approach, gradually add complexity |
+| Graph database scaling | Optimize schema for performance, implement selective indexing, monitor query performance |
+| Vector search latency | Implement vector compression, quantization, and approximate nearest neighbor techniques |
 
 ## Conclusion
 
-This implementation plan provides a structured approach to developing the Voice Note Taking RAG system. The phased approach follows the natural data flow from audio capture through transcription, chunking, enrichment, storage, and retrieval. Each phase has clear, verifiable exit criteria to ensure quality at every step. By following this plan, we'll build a robust, high-quality system that meets the requirements while incorporating best practices for RAG systems.
+This implementation plan provides a structured approach to developing the Voice Note Taking RAG system. The reorganized phased approach focuses first on chunking capabilities, followed by database integration, hybrid search, and response generation, before adding audio transcription capabilities. This allows for earlier testing of core RAG functionality using existing transcripts. Each phase has clear, verifiable exit criteria to ensure quality at every step. By following this plan, we'll build a robust, high-quality system that meets the requirements while incorporating best practices for RAG systems.
