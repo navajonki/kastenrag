@@ -89,16 +89,49 @@ class ChunkingStep(PipelineStep):
         
         chunker = registry.create(
             component_type="chunker",
-            implementation_name="sliding_window",
-            **chunker_config.dict()
+            implementation_name=chunker_config.type,
+            **chunker_config.dict(exclude={"type"})
         )
         
+        # Give the chunker access to the pipeline context
+        chunker.context = self.context
+        
+        # Get transcript from context (could be from transcription or direct input)
         transcript = self.context.get("transcript")
         if not transcript:
-            raise ValueError("No transcript provided in context")
+            # Check if there's direct text input instead
+            text_input = self.context.get("text_input")
+            if not text_input:
+                raise ValueError("No transcript or text input provided in context")
+            text_to_chunk = text_input
+        else:
+            text_to_chunk = transcript["text"]
         
-        chunks = chunker.chunk(transcript["text"])
+        chunks = chunker.chunk(text_to_chunk)
         self.context.set("chunks", chunks)
+
+
+class ValidationStep(PipelineStep):
+    """Pipeline step for validating chunk quality."""
+    
+    @performance_timer("pipeline", "validation")
+    def execute(self) -> None:
+        from ..validators.chunk_validator import ChunkValidator
+        
+        chunks = self.context.get("chunks")
+        if not chunks:
+            raise ValueError("No chunks provided in context")
+        
+        validator = ChunkValidator()
+        validated_chunks, metrics = validator.validate_chunk_batch(chunks)
+        
+        self.context.set("validated_chunks", validated_chunks)
+        self.context.set("quality_metrics", metrics)
+        
+        # Log the quality metrics
+        print(f"Chunk Quality Metrics:")
+        for key, value in metrics.items():
+            print(f"  {key}: {value:.4f}")
 
 
 # More pipeline steps to be implemented in future phases...
@@ -108,9 +141,13 @@ def create_pipeline(config: SystemConfig) -> Pipeline:
     """Create a pipeline with all necessary steps."""
     pipeline = Pipeline(config)
     
-    # Add steps based on configuration
-    # These will be expanded in future phases
-    pipeline.add_step(TranscriptionStep)
+    # Configure pipeline based on input type
+    if config.transcriber.type != "mock":
+        # Full audio processing pipeline
+        pipeline.add_step(TranscriptionStep)
+    
+    # Always include chunking and validation
     pipeline.add_step(ChunkingStep)
+    pipeline.add_step(ValidationStep)
     
     return pipeline

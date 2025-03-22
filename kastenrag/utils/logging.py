@@ -51,8 +51,12 @@ class LLMLogger:
             "metadata": metadata or {}
         }
         
+        # Print to console for real-time feedback
+        print(f"LLM Interaction: {model} - Latency: {latency:.2f}s, Tokens: {prompt_tokens}/{response_tokens}")
+        
         with open(self.log_file, "a") as f:
             f.write(json.dumps(log_entry) + "\n")
+            f.flush()  # Ensure logs are written immediately
 
 
 class PerformanceLogger:
@@ -80,8 +84,12 @@ class PerformanceLogger:
             "metadata": metadata or {}
         }
         
+        # Print for real-time feedback
+        print(f"Performance: {component}.{operation} - Elapsed time: {elapsed_time:.4f}s")
+        
         with open(self.log_file, "a") as f:
             f.write(json.dumps(log_entry) + "\n")
+            f.flush()  # Ensure logs are written immediately
 
 
 def performance_timer(component: str, operation: str):
