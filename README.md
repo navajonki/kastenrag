@@ -76,17 +76,68 @@ kastenrag/
 └── docker-compose.yml        # Docker composition
 ```
 
+## Testing with Real LLMs
+
+The system supports multiple LLM providers for atomic chunking:
+
+1. **OpenAI models**:
+   - gpt-4o
+   - gpt-4o-mini-2024-07-18
+   - o3-mini-2025-01-31
+
+2. **Replicate models**:
+   - meta/meta-llama-3-8b-instruct
+   - meta/meta-llama-3-70b-instruct
+
+To test with a specific LLM:
+
+```bash
+# Option 1: Set API keys in environment
+export OPENAI_API_KEY="your_openai_key"
+export REPLICATE_API_TOKEN="your_replicate_token"
+
+# Option 2: Create a .env file (recommended)
+cp .env.template .env
+# Edit .env with your API keys and preferred settings
+
+# Test a specific model
+python scripts/test_real_llm.py --provider openai --model gpt-4o-mini-2024-07-18 --input-file test_inputs/JCS_transcript_short.txt
+
+# For quick testing
+./scripts/test_quick_llm.sh openai gpt-4o-mini-2024-07-18
+
+# Test all configured models
+./scripts/test_all_llms.sh
+```
+
 ## Implementation Status
 
 The system is being built in phases:
 
 - [x] Phase 1: Development Environment and Framework Setup
-- [ ] Phase 2: Atomic Chunking Implementation
-- [ ] Phase 3: Vector Database Integration
+- [x] Phase 2: Atomic Chunking Implementation
+- [ ] Phase 3: Vector Database Integration (In Progress)
 - [ ] Phase 4: Graph Database Integration
-- [ ] Phase 5: Hybrid Search Implementation
-- [ ] Phase 6: Response Generation
-- [ ] Phase 7: Audio Transcription Integration
-- [ ] Phase 8: Performance Optimization and Scaling
-- [ ] Phase 9: User Interface and API Development
-- [ ] Phase 10: Testing, Documentation, and Deployment
+- [ ] Phase 5: Retrieval Engine and API
+- [ ] Phase 6: Generation Layer
+- [ ] Phase 7: User Interface
+- [ ] Phase 8: Deployment and Scaling
+- [ ] Phase 9: Security and Compliance
+- [ ] Phase 10: Evaluation and Fine-tuning
+
+### Phase 2 Completion
+The atomic chunking system has been successfully implemented, featuring:
+- Two-pass LLM-based fact extraction and refinement
+- Entity resolution for contextual independence
+- Topic tagging for improved retrieval
+- Relationship extraction for entity connections
+- Quality validation metrics for chunks
+- Multiple LLM provider support (OpenAI, Replicate, Mock)
+- Structured logging system
+
+### Phase 3 Next Steps
+The next phase focuses on vector database integration:
+- Embedding generation for atomic chunks
+- ChromaDB integration for vector storage
+- Efficient similarity search mechanisms
+- Metadata management for improved retrieval
