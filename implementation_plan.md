@@ -11,7 +11,7 @@ This document outlines the implementation plan for the KastenRAG (Kasten Retriev
 - [x] Component registry for dependency injection
 - [x] Basic pipeline orchestration
 
-## Phase 2: Atomic Chunking Implementation ✅
+## Phase 2: Atomic Chunking Implementation ⏳
 
 - [x] Atomic chunker development
   - [x] LLM-based chunking to extract self-contained facts
@@ -29,6 +29,10 @@ This document outlines the implementation plan for the KastenRAG (Kasten Retriev
   - [x] Proper logging and error handling
   - [x] Configuration through environment variables
   - [x] Verified with mock implementation
+- [ ] Real LLM verification
+  - [ ] Successfully generate chunks with OpenAI or Replicate models
+  - [ ] Verify chunks meet quality requirements from PRD
+  - [ ] Confirm logging and performance metrics work with real LLMs
 
 ## Phase 3: Vector Database Integration ⬜
 

@@ -2,6 +2,13 @@
 
 This document outlines the implementation plan for Phase 3 of the KastenRAG project, focusing on vector database integration.
 
+## Prerequisites
+
+Before beginning Phase 3, we must first complete the remaining work for Phase 2:
+- Successfully test the atomic chunking system with real LLM providers (OpenAI/Replicate)
+- Verify that chunks meet the quality requirements specified in the PRD
+- Validate that logging and performance metrics work correctly with real LLMs
+
 ## Overview
 
 Phase 3 involves implementing vector embeddings for the atomic chunks generated in Phase 2 and storing them in a vector database (ChromaDB) for efficient similarity-based retrieval. This phase is crucial for enabling semantic search capabilities beyond simple keyword matching.
