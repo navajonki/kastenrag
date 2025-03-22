@@ -307,36 +307,42 @@ class AtomicChunker:
         if hasattr(self, 'context') and self.context:
             logger = self.context.get("llm_logger")
         
-        # Step 1: Split text into overlapping segments
-        print(f"Splitting text into segments (length: {len(text)}, window: {self.window_size}, overlap: {self.overlap})")
-        segments = []
-        start = 0
-        while start < len(text):
-            # Get segment with window_size or remaining text
-            end = min(start + self.window_size, len(text))
+        # Step 1: Determine if we should process the text as a single segment
+        # For small inputs, don't split into segments
+        if len(text) <= self.window_size:
+            print(f"Text is small enough ({len(text)} chars) to process as a single segment")
+            segments = [text]
+        else:
+            # Split into overlapping segments for larger texts
+            print(f"Splitting text into segments (length: {len(text)}, window: {self.window_size}, overlap: {self.overlap})")
+            segments = []
+            start = 0
+            while start < len(text):
+                # Get segment with window_size or remaining text
+                end = min(start + self.window_size, len(text))
+                
+                # Adjust boundaries based on boundary rules
+                if end < len(text) and "paragraph" in self.boundary_rules:
+                    paragraph_boundaries = [
+                        m.end() for m in re.finditer(r'\n\s*\n', text[start:end])
+                    ]
+                    if paragraph_boundaries:
+                        end = start + paragraph_boundaries[-1]
+                elif end < len(text) and "sentence" in self.boundary_rules:
+                    sentence_boundaries = [
+                        m.end() for m in re.finditer(r'[.!?][\s\n]', text[start:end])
+                    ]
+                    if sentence_boundaries:
+                        end = start + sentence_boundaries[-1]
+                
+                segment_text = text[start:end].strip()
+                if segment_text:
+                    segments.append(segment_text)
+                
+                # Move start position for next segment (with overlap)
+                start = max(end - self.overlap, start + 1)  # Ensure we make progress
             
-            # Adjust boundaries based on boundary rules
-            if end < len(text) and "paragraph" in self.boundary_rules:
-                paragraph_boundaries = [
-                    m.end() for m in re.finditer(r'\n\s*\n', text[start:end])
-                ]
-                if paragraph_boundaries:
-                    end = start + paragraph_boundaries[-1]
-            elif end < len(text) and "sentence" in self.boundary_rules:
-                sentence_boundaries = [
-                    m.end() for m in re.finditer(r'[.!?][\s\n]', text[start:end])
-                ]
-                if sentence_boundaries:
-                    end = start + sentence_boundaries[-1]
-            
-            segment_text = text[start:end].strip()
-            if segment_text:
-                segments.append(segment_text)
-            
-            # Move start position for next segment (with overlap)
-            start = max(end - self.overlap, start + 1)  # Ensure we make progress
-        
-        print(f"Created {len(segments)} text segments")
+        print(f"Processing {len(segments)} text segments")
         
         # Step 2: Extract initial facts from each segment
         print("Extracting initial facts from segments...")
