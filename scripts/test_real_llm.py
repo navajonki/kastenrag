@@ -198,6 +198,7 @@ def main():
     # Add loggers to pipeline context
     pipeline.context.set("llm_logger", llm_logger)
     pipeline.context.set("performance_logger", perf_logger)
+    pipeline.context.set("logger", logger)  # Add the general logger too
     
     # Track execution time
     start_time = time.time()

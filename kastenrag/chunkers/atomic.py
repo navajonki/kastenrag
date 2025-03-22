@@ -314,7 +314,9 @@ class AtomicChunker:
             segments = [text]
         else:
             # Split into overlapping segments for larger texts
+            expected_segments = max(1, int((len(text) - self.overlap) / (self.window_size - self.overlap)))
             print(f"Splitting text into segments (length: {len(text)}, window: {self.window_size}, overlap: {self.overlap})")
+            print(f"Expected number of segments: ~{expected_segments} (with ideal sliding window)")
             segments = []
             start = 0
             while start < len(text):
@@ -339,8 +341,18 @@ class AtomicChunker:
                 if segment_text:
                     segments.append(segment_text)
                 
-                # Move start position for next segment (with overlap)
-                start = max(end - self.overlap, start + 1)  # Ensure we make progress
+                # Move start position for next segment (with proper overlap)
+                # We advance by (window_size - overlap) to create a sliding window with the desired overlap
+                new_start = start + self.window_size - self.overlap
+                
+                # Log the window movement to help with debugging
+                if hasattr(self, 'context') and self.context and self.context.get("logger"):
+                    logger = self.context.get("logger")
+                    logger.debug(f"Window: current start={start}, end={end}, new start={new_start}, " +
+                               f"advance by {new_start - start}, overlap={end - new_start}")
+                
+                # Ensure we make progress and maintain proper overlap
+                start = max(end - self.overlap, new_start)
             
         print(f"Processing {len(segments)} text segments")
         
