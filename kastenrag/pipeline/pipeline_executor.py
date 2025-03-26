@@ -580,8 +580,9 @@ class PipelineExecutor:
         Returns:
             Dictionary with execution results and errors
         """
-        self.results = {}
-        self.errors = {}
+        # Reset the result dictionaries
+        node_results = {}
+        node_errors = {}
         
         try:
             # Execute nodes in topological order
@@ -600,20 +601,26 @@ class PipelineExecutor:
                     outputs = node.execute()
                     
                     # Store outputs in results
-                    self.results[node_id] = outputs
+                    node_results[node_id] = outputs
+                    print(f"Node {node_id} executed successfully, output: {outputs.keys() if outputs else 'None'}")
                 except Exception as e:
-                    self.errors[node_id] = str(e)
+                    node_errors[node_id] = str(e)
                     self.logger.error(f"Error executing node {node_id}: {str(e)}")
+                    print(f"Node {node_id} execution error: {str(e)}")
+            
+            # Log the results for debugging
+            print(f"Pipeline execution complete. Results for {len(node_results)} nodes, errors for {len(node_errors)} nodes")
             
             return {
-                'results': self.results,
-                'errors': self.errors,
+                'results': node_results,  # Renamed variable for clarity
+                'errors': node_errors,    # Renamed variable for clarity
                 'execution_order': self.execution_order
             }
         except Exception as e:
             self.logger.error(f"Error executing pipeline: {str(e)}")
+            print(f"Pipeline execution error: {str(e)}")
             return {
-                'results': self.results,
+                'results': node_results,
                 'errors': {'pipeline': str(e)},
                 'execution_order': self.execution_order
             }
