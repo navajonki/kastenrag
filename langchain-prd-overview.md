@@ -318,19 +318,49 @@ This modular architecture enables:
 
 ### **4.6 User Interface Integration**
 
-#### **4.6.1 API Endpoints for UI**
+#### **4.6.1 Graph-Based Pipeline Builder UI**
+
+The system will include a graph-based visual pipeline builder UI for flexible configuration:
+
+- **Pipeline Node Graph Interface:**
+  - Drag-and-drop interface for creating processing pipelines
+  - Nodes represent processing components (ingestion, chunking, enrichment, etc.)
+  - Connections between nodes represent data flow
+  - Type validation ensures only compatible node inputs/outputs can be connected
+  - Visual feedback for active vs. inactive nodes, successful vs. failed operations
+
+- **Node Types and Data Flow:**
+  - **Input Nodes:** Accept raw text (transcripts, documents) as input
+  - **Processing Nodes:** Transform or enrich data (chunkers, entity extractors)
+  - **Output Nodes:** Store or display processed results
+  - **Typed Connections:** Enforce data compatibility between nodes
+    - Raw Text → Chunkers
+    - Chunkers → Fact Chunks
+    - Fact Chunks → Enrichers/Metadata Extractors
+    - Enriched Facts → Vector/Graph Storage
+
+- **Pipeline Execution and Visualization:**
+  - Save, load, and share pipeline configurations
+  - Real-time pipeline execution with progress tracking
+  - View intermediate outputs at any pipeline stage
+  - Inspect detailed logs for each processing step
+  - Visualize relationships between fact chunks
+
+#### **4.6.2 API Endpoints for UI**
 
 - Create FastAPI endpoints for system interaction
 - Support audio file upload and processing
 - Implement query endpoints with various parameters
 - Provide endpoints for browsing and managing chunks
+- API endpoints for pipeline management (create, run, save, load)
 
-#### **4.6.2 Graph Visualization Data Preparation**
+#### **4.6.3 Graph Visualization Data Preparation**
 
 - Format graph data for visualization
 - Support interactive exploration
 - Implement sub-graph extraction around focal points
 - Provide metadata for nodes and edges
+- Visualize data flow between pipeline components
 
 ### **4.7 System Performance Optimization**
 
@@ -887,8 +917,13 @@ To help your junior engineer track progress, here's a structured implementation 
 - [ ] Implement FastAPI endpoints for system interaction
 - [ ] Implement file upload and processing endpoints
 - [ ] Implement query endpoints
-- [ ] Implement basic UI for system monitoring
-- [ ] Implement graph visualization for browsing chunks
+- [ ] Develop graph-based pipeline builder UI components:
+  - [ ] Create drag-and-drop node interface
+  - [ ] Implement node type system with input/output validation
+  - [ ] Build pipeline execution and monitoring system
+  - [ ] Create visualization for pipeline data flow
+- [ ] Implement intermediate output viewing for pipeline nodes
+- [ ] Implement graph visualization for browsing fact chunks and relationships
 
 ### **9.7 Documentation and Deployment**
 
@@ -931,9 +966,11 @@ Once the core system is implemented, consider these enhancements:
    - Add contextual query expansion
 
 4. **User Experience:**
-   - Create comprehensive web UI
-   - Add visualization tools for exploring connections
-   - Implement voice query interface
+   - Enhance graph-based pipeline builder with additional node types
+   - Add pipeline templates for common processing patterns
+   - Add advanced visualization tools for exploring connections between facts
+   - Implement voice query interface for hands-free operation
+   - Create shareable pipeline configurations through cloud synchronization
 
 5. **Integration:**
    - Add plugins for note-taking apps (Obsidian, Notion)

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KastenRAG Prompt Template Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar {
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-menu {
+            padding: 0;
+            list-style: none;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-menu a {
+            display: block;
+            padding: 10px 20px;
+            color: #333;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #e9ecef;
+            border-left-color: #0d6efd;
+        }
+        
+        .sidebar-menu a i {
+            margin-right: 10px;
+        }
+        
+        .content-wrapper {
+            margin-left: 280px;
+            padding: 20px;
+            flex-grow: 1;
+            overflow: auto;
+        }
+        
+        .template-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding: 8px;
+        }
+        
+        .form-check {
+            margin-bottom: 12px;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .form-check:last-child {
+            border-bottom: none;
+        }
+        
+        .form-check-input {
+            float: left;
+            margin-top: 0.25rem;
+            margin-left: -1.5rem;
+        }
+        
+        .form-check-label {
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        
+        .btn-group-sm {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: flex-start;
+        }
+        
+        .btn-group-sm .btn {
+            margin-right: 5px;
+        }
+        
+        .template-actions {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            margin-left: 1.5rem;
+        }
+        
+        .template-actions .btn {
+            margin-right: 8px;
+            margin-bottom: 5px;
+        }
+        
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .card {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
+        
+        .card-header {
+            background-color: #f8f9fa;
+            font-weight: 500;
+        }
+        
+        .section-title {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .previous-run-item {
+            transition: all 0.2s;
+        }
+        
+        .previous-run-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4>KastenRAG</h4>
+            <p class="text-muted mb-0">Template Management</p>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li>
+                <a href="{{ url_for('index') }}#new-run-section" class="active" id="nav-new-run">
+                    <i class="bi bi-play-circle"></i> New Test Run
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('index') }}#previous-runs-section" id="nav-previous-runs">
+                    <i class="bi bi-clock-history"></i> Previous Test Runs
+                </a>
+            </li>
+            <li class="sidebar-divider my-3 border-top"></li>
+            <li>
+                <a href="{{ url_for('template_management', template_type='first_pass') }}">
+                    <i class="bi bi-file-earmark-text"></i> First Pass Templates
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('template_management', template_type='second_pass') }}">
+                    <i class="bi bi-file-earmark-code"></i> Second Pass Templates
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('template_management', template_type='metadata') }}">
+                    <i class="bi bi-tags"></i> Metadata Templates
+                </a>
+            </li>
+            <li class="sidebar-divider my-3 border-top"></li>
+            <li>
+                <a href="{{ url_for('pipeline_builder') }}" class="bg-light">
+                    <i class="bi bi-diagram-3"></i> Pipeline Builder (New!)
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        <!-- Flash messages -->
+        {% if get_flashed_messages() %}
+        <div class="flash-messages">
+            {% for message in get_flashed_messages() %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <section id="new-run-section" class="mb-5">
+            <h2 class="section-title">New Test Run</h2>
+            
+            <form action="{{ url_for('run_test') }}" method="post">
+                <!-- Input File and Model Selection -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Input File</h5>
+                            </div>
+                            <div class="card-body">
+                                <select class="form-select" id="input_file" name="input_file" required>
+                                    <option value="">Select an input file</option>
+                                    {% for file in test_files %}
+                                    <option value="{{ file.path }}">{{ file.name }} ({{ file.size // 1024 }} KB)</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">LLM Model</h5>
+                            </div>
+                            <div class="card-body">
+                                <select class="form-select" id="model" name="model" required>
+                                    <optgroup label="Mock Models (Fast, No API Keys Required)">
+                                        {% for model in available_models %}
+                                            {% if model.provider == "mock" %}
+                                            <option value="{{ model.id }}" 
+                                                    data-provider="{{ model.provider }}"
+                                                    {% if model.id == "mock-gpt-4" %}selected{% endif %}>
+                                                {{ model.name }}
+                                            </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </optgroup>
+                                    <optgroup label="OpenAI Models (Requires API Key)">
+                                        {% for model in available_models %}
+                                            {% if model.provider == "openai" %}
+                                            <option value="{{ model.id }}" 
+                                                    data-provider="{{ model.provider }}">
+                                                {{ model.name }}
+                                            </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </optgroup>
+                                    <optgroup label="Replicate Models (Requires API Token)">
+                                        {% for model in available_models %}
+                                            {% if model.provider == "replicate" %}
+                                            <option value="{{ model.id }}" 
+                                                    data-provider="{{ model.provider }}">
+                                                {{ model.name }}
+                                            </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </optgroup>
+                                </select>
+                                <input type="hidden" name="provider" id="provider" value="mock">
+                                <div class="form-text mt-2">Select a model to use for this test run. Mock models are recommended for testing.</div>
+                                <div id="model-warning" class="alert alert-warning mt-3 d-none">
+                                    <small>
+                                        <strong>Warning:</strong> Non-mock models require valid API credentials. 
+                                        Set the appropriate environment variables before running tests.
+                                        <ul class="mb-0 mt-1">
+                                            <li>OpenAI models: <code>OPENAI_API_KEY</code></li>
+                                            <li>Replicate models: <code>REPLICATE_API_TOKEN</code></li>
+                                        </ul>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- First and Second Pass Templates -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Chunking Templates</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <h6 class="mb-3">First Pass Prompts</h6>
+                                <div class="template-list border rounded">
+                                    {% for template in first_pass_templates %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="first_pass_templates" value="{{ template.name }}" id="first_{{ template.name }}">
+                                        <label class="form-check-label" for="first_{{ template.name }}">
+                                            {{ template.name }}
+                                            {% if not template.is_custom %}
+                                                <span class="badge bg-secondary ms-1">Built-in</span>
+                                            {% endif %}
+                                            <small class="text-muted d-block mt-1">{{ template.description }}</small>
+                                        </label>
+                                        <div class="template-actions">
+                                            <a href="{{ url_for('view_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-info">View</a>
+                                            {% if template.is_custom %}
+                                                <a href="{{ url_for('edit_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            {% else %}
+                                                <a href="{{ url_for('new_template', component_type=template.component_type, task=template.task, from=template.name) }}" class="btn btn-sm btn-outline-secondary">Copy</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('new_template', component_type='chunker', task='first_pass') }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-plus-circle"></i> New Template
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-4">
+                                <h6 class="mb-3">Second Pass Prompts</h6>
+                                <div class="template-list border rounded">
+                                    {% for template in second_pass_templates %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="second_pass_templates" value="{{ template.name }}" id="second_{{ template.name }}">
+                                        <label class="form-check-label" for="second_{{ template.name }}">
+                                            {{ template.name }}
+                                            {% if not template.is_custom %}
+                                                <span class="badge bg-secondary ms-1">Built-in</span>
+                                            {% endif %}
+                                            <small class="text-muted d-block mt-1">{{ template.description }}</small>
+                                        </label>
+                                        <div class="template-actions">
+                                            <a href="{{ url_for('view_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-info">View</a>
+                                            {% if template.is_custom %}
+                                                <a href="{{ url_for('edit_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            {% else %}
+                                                <a href="{{ url_for('new_template', component_type=template.component_type, task=template.task, from=template.name) }}" class="btn btn-sm btn-outline-secondary">Copy</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('new_template', component_type='chunker', task='second_pass') }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-plus-circle"></i> New Template
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Metadata Generation -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">LLM-Based Metadata Templates</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <small>
+                                <strong>Note:</strong> By default, rule-based metadata extraction is used (without LLM). 
+                                Selecting templates below will enable LLM-based metadata extraction for those specific types.
+                            </small>
+                        </div>
+                        
+                        <!-- Hidden fields for backend compatibility - default to rule-based (false) -->
+                        <input type="hidden" id="use_llm_for_metadata" name="use_llm_for_metadata" value="false">
+                        <input type="hidden" id="use_llm_for_entities" name="use_llm_for_entities" value="false">
+                        <input type="hidden" id="use_llm_for_topics" name="use_llm_for_topics" value="false">
+                        <input type="hidden" id="use_llm_for_relationships" name="use_llm_for_relationships" value="false">
+                        
+                        <div>
+                        <div class="row">
+                            <div class="col-md-4 mb-4">
+                                <h6 class="mb-3">Entity Extraction Template</h6>
+                                <div class="template-list border rounded">
+                                    {% for template in metadata_entity_templates %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="entity_template" value="{{ template.name }}" id="entity_{{ template.name }}" {% if template.name == 'default' %}checked{% endif %}>
+                                        <label class="form-check-label" for="entity_{{ template.name }}">
+                                            {{ template.name }}
+                                            {% if not template.is_custom %}
+                                                <span class="badge bg-secondary ms-1">Built-in</span>
+                                            {% endif %}
+                                            <small class="text-muted d-block mt-1">{{ template.description }}</small>
+                                        </label>
+                                        <div class="template-actions">
+                                            <a href="{{ url_for('view_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-info">View</a>
+                                            {% if template.is_custom %}
+                                                <a href="{{ url_for('edit_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            {% else %}
+                                                <a href="{{ url_for('new_template', component_type=template.component_type, task=template.task, from=template.name) }}" class="btn btn-sm btn-outline-secondary">Copy</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('new_template', component_type='chunker', task='metadata_entity') }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-plus-circle"></i> New Template
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-4">
+                                <h6 class="mb-3">Topic Tagging Template</h6>
+                                <div class="template-list border rounded">
+                                    {% for template in metadata_topic_templates %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="topic_template" value="{{ template.name }}" id="topic_{{ template.name }}" {% if template.name == 'default' %}checked{% endif %}>
+                                        <label class="form-check-label" for="topic_{{ template.name }}">
+                                            {{ template.name }}
+                                            {% if not template.is_custom %}
+                                                <span class="badge bg-secondary ms-1">Built-in</span>
+                                            {% endif %}
+                                            <small class="text-muted d-block mt-1">{{ template.description }}</small>
+                                        </label>
+                                        <div class="template-actions">
+                                            <a href="{{ url_for('view_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-info">View</a>
+                                            {% if template.is_custom %}
+                                                <a href="{{ url_for('edit_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            {% else %}
+                                                <a href="{{ url_for('new_template', component_type=template.component_type, task=template.task, from=template.name) }}" class="btn btn-sm btn-outline-secondary">Copy</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('new_template', component_type='chunker', task='metadata_topic') }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-plus-circle"></i> New Template
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-4">
+                                <h6 class="mb-3">Relationship Extraction Template</h6>
+                                <div class="template-list border rounded">
+                                    {% for template in metadata_relationship_templates %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="relationship_template" value="{{ template.name }}" id="relationship_{{ template.name }}" {% if template.name == 'default' %}checked{% endif %}>
+                                        <label class="form-check-label" for="relationship_{{ template.name }}">
+                                            {{ template.name }}
+                                            {% if not template.is_custom %}
+                                                <span class="badge bg-secondary ms-1">Built-in</span>
+                                            {% endif %}
+                                            <small class="text-muted d-block mt-1">{{ template.description }}</small>
+                                        </label>
+                                        <div class="template-actions">
+                                            <a href="{{ url_for('view_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-info">View</a>
+                                            {% if template.is_custom %}
+                                                <a href="{{ url_for('edit_template', component_type=template.component_type, task=template.task, n=template.name) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            {% else %}
+                                                <a href="{{ url_for('new_template', component_type=template.component_type, task=template.task, from=template.name) }}" class="btn btn-sm btn-outline-secondary">Copy</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('new_template', component_type='chunker', task='metadata_relationship') }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-plus-circle"></i> New Template
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                        <i class="bi bi-play-fill"></i> Run Test
+                    </button>
+                </div>
+            </form>
+        </section>
+        
+        <section id="previous-runs-section" class="mb-5">
+            <h2 class="section-title">Previous Test Runs</h2>
+            
+            <div class="row">
+                {% if test_runs %}
+                    {% for run in test_runs %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <a href="{{ url_for('view_run', run_id=run.id) }}" class="text-decoration-none">
+                            <div class="card previous-run-item h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Run {{ loop.index }}</h5>
+                                    <span class="badge {% if run.status == 'pending' %}bg-secondary{% elif run.status == 'running' %}bg-primary{% elif run.status == 'completed' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ run.status }}
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-file-text"></i> Input:</strong> 
+                                        {{ run.input_file.split('/')[-1] }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong><i class="bi bi-calendar3"></i> Date:</strong> 
+                                        <span class="text-muted">{{ run.timestamp.split('T')[0] }}</span>
+                                    </div>
+                                    <div>
+                                        <strong><i class="bi bi-grid-3x3"></i> Combinations:</strong> 
+                                        {{ run.combinations }}
+                                    </div>
+                                    
+                                    {% if run.progress and run.status == 'running' %}
+                                    <div class="mt-3">
+                                        <div class="progress" style="height: 8px;">
+                                            {% set progress_percent = (run.progress.completed_combinations / run.progress.total_combinations * 100)|int if run.progress.total_combinations > 0 else 0 %}
+                                            <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
+                                                 role="progressbar" 
+                                                 style="width: {{ progress_percent }}%;" 
+                                                 aria-valuenow="{{ progress_percent }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted d-block text-center mt-1">{{ progress_percent }}% complete</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle me-2"></i> No test runs yet. Create one using the form above.
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function updateProvider() {
+            const modelSelect = document.getElementById('model');
+            const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+            const provider = selectedOption.getAttribute('data-provider');
+            const modelWarning = document.getElementById('model-warning');
+            
+            // Update provider value
+            document.getElementById('provider').value = provider;
+            
+            // Show warning for non-mock models
+            if (provider !== 'mock') {
+                modelWarning.classList.remove('d-none');
+            } else {
+                modelWarning.classList.add('d-none');
+            }
+        }
+        
+        // Function to update hidden fields based on template selection
+        function updateMetadataFlags() {
+            // Get all the selected templates
+            const entityTemplates = document.querySelectorAll('input[name="entity_template"]:checked');
+            const topicTemplates = document.querySelectorAll('input[name="topic_template"]:checked');
+            const relationshipTemplates = document.querySelectorAll('input[name="relationship_template"]:checked');
+            
+            // Update the hidden fields based on selection
+            document.getElementById('use_llm_for_entities').value = entityTemplates.length > 0 ? "true" : "false";
+            document.getElementById('use_llm_for_topics').value = topicTemplates.length > 0 ? "true" : "false";
+            document.getElementById('use_llm_for_relationships').value = relationshipTemplates.length > 0 ? "true" : "false";
+            
+            // Update the main metadata flag if any template is selected
+            const useLLM = entityTemplates.length > 0 || topicTemplates.length > 0 || relationshipTemplates.length > 0;
+            document.getElementById('use_llm_for_metadata').value = useLLM ? "true" : "false";
+        }
+        
+        // Update provider when model changes
+        document.getElementById('model').addEventListener('change', updateProvider);
+        
+        // Navigation handling for page sections
+        document.getElementById('nav-new-run').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('new-run-section').scrollIntoView({ behavior: 'smooth' });
+            setActiveNavItem(this);
+        });
+        
+        document.getElementById('nav-previous-runs').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('previous-runs-section').scrollIntoView({ behavior: 'smooth' });
+            setActiveNavItem(this);
+        });
+        
+        function setActiveNavItem(element) {
+            // Remove active class from all nav items
+            document.querySelectorAll('.sidebar-menu a').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to clicked item
+            element.classList.add('active');
+        }
+        
+        // Set initial values when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProvider();
+            
+            // Add event listeners to all template checkboxes
+            document.querySelectorAll('input[name="entity_template"], input[name="topic_template"], input[name="relationship_template"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateMetadataFlags);
+            });
+            
+            // Initial update of the hidden fields
+            updateMetadataFlags();
+            
+            // Check if URL has a hash and scroll to that section
+            if (window.location.hash) {
+                const targetSection = document.querySelector(window.location.hash);
+                if (targetSection) {
+                    targetSection.scrollIntoView();
+                    
+                    // Update active nav item
+                    const navItem = document.querySelector(`a[href$="${window.location.hash}"]`);
+                    if (navItem) {
+                        setActiveNavItem(navItem);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

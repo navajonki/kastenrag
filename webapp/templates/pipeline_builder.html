@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KastenRAG Pipeline Builder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            padding-top: 20px; 
+            overflow-x: hidden;
+        }
+        .canvas-container {
+            position: relative;
+            height: 600px;
+            width: 100%;
+            border: 1px solid #ddd;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+        .node {
+            position: absolute;
+            width: 180px;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: move;
+            z-index: 1;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .node-header {
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+        }
+        .node-input, .node-output {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.05);
+            font-size: 0.85rem;
+        }
+        .node-input {
+            border-left: 3px solid #007bff;
+        }
+        .node-output {
+            border-right: 3px solid #28a745;
+            text-align: right;
+        }
+        .connector {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+        .input-connector {
+            left: -6px;
+            background-color: #007bff;
+        }
+        .output-connector {
+            right: -6px;
+            background-color: #28a745;
+        }
+        .edge {
+            position: absolute;
+            height: 2px;
+            background-color: #6c757d;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .node-input-text, .node-output-text {
+            width: 100%;
+            position: relative;
+        }
+        .node-text { 
+            height: 38px;
+            background: #f8f9fa;
+        }
+        .node-raw-text { background-color: #e6f7ff; }
+        .node-chunker { background-color: #fff0e6; }
+        .node-enricher { background-color: #e6ffe6; }
+        .node-storage { background-color: #f9e6ff; }
+        .node-output-node { background-color: #ffe6e6; }
+        .minimap {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 150px;
+            height: 100px;
+            background: rgba(255,255,255,0.8);
+            border: 1px solid #ddd;
+            z-index: 10;
+        }
+        .toolbar {
+            margin-bottom: 15px;
+        }
+        .node-palette {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .node-palette .btn {
+            margin-bottom: 5px;
+        }
+        .sidebar {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            height: 600px;
+            overflow-y: auto;
+        }
+        .node-properties {
+            margin-top: 15px;
+        }
+        #node-preview {
+            margin-top: 20px;
+        }
+        #preview-content {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <header class="mb-4">
+            <h1>KastenRAG Pipeline Builder</h1>
+            <p class="lead">Create custom processing pipelines by connecting nodes</p>
+        </header>
+        
+        <div class="row">
+            <!-- Left Sidebar -->
+            <div class="col-md-3">
+                <div class="sidebar">
+                    <h4>Node Palette</h4>
+                    <p>Drag components to the canvas:</p>
+                    
+                    <div class="node-palette">
+                        <!-- Input Nodes -->
+                        <button class="btn btn-sm node-raw-text" draggable="true" data-node-type="text-input">
+                            <i class="fas fa-file-alt"></i> Text Input
+                        </button>
+                        <button class="btn btn-sm node-raw-text" draggable="true" data-node-type="file-upload">
+                            <i class="fas fa-upload"></i> File Upload
+                        </button>
+                        
+                        <!-- Processing Nodes -->
+                        <button class="btn btn-sm node-chunker" draggable="true" data-node-type="atomic-chunker">
+                            <i class="fas fa-puzzle-piece"></i> Atomic Chunker
+                        </button>
+                        <button class="btn btn-sm node-chunker" draggable="true" data-node-type="sliding-window">
+                            <i class="fas fa-window-restore"></i> Sliding Window
+                        </button>
+                        <button class="btn btn-sm node-enricher" draggable="true" data-node-type="entity-extractor">
+                            <i class="fas fa-tag"></i> Entity Extractor
+                        </button>
+                        <button class="btn btn-sm node-enricher" draggable="true" data-node-type="topic-tagger">
+                            <i class="fas fa-hashtag"></i> Topic Tagger
+                        </button>
+                        
+                        <!-- Storage Nodes -->
+                        <button class="btn btn-sm node-storage" draggable="true" data-node-type="vector-store">
+                            <i class="fas fa-database"></i> Vector Store
+                        </button>
+                        <button class="btn btn-sm node-storage" draggable="true" data-node-type="graph-store">
+                            <i class="fas fa-project-diagram"></i> Graph Store
+                        </button>
+                        
+                        <!-- Output Nodes -->
+                        <button class="btn btn-sm node-output-node" draggable="true" data-node-type="visualizer">
+                            <i class="fas fa-chart-network"></i> Visualizer
+                        </button>
+                    </div>
+                    
+                    <div class="node-properties" id="properties-panel">
+                        <h4>Node Properties</h4>
+                        <p class="text-muted">Select a node to view and edit its properties</p>
+                        <div id="node-properties-content">
+                            <!-- Properties will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div id="node-preview">
+                        <h4>Output Preview</h4>
+                        <div id="preview-content">
+                            <p class="text-muted">Select a node to view its output</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Canvas Area -->
+            <div class="col-md-9">
+                <div class="toolbar">
+                    <button id="run-pipeline" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Run Pipeline
+                    </button>
+                    <button id="save-pipeline" class="btn btn-outline-secondary">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button id="load-pipeline" class="btn btn-outline-secondary">
+                        <i class="fas fa-folder-open"></i> Load
+                    </button>
+                    <button id="clear-canvas" class="btn btn-outline-danger float-end">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+                
+                <div class="canvas-container" id="pipeline-canvas">
+                    <!-- Nodes and edges will be added here -->
+                    <div class="minimap" id="minimap"></div>
+                </div>
+                
+                <div class="alert alert-info mt-3" id="status-panel">
+                    <i class="fas fa-info-circle"></i> Ready to build pipeline. Drag components from the palette to get started.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates for nodes -->
+    <template id="node-template">
+        <div class="node">
+            <div class="node-header">
+                <span class="node-title">Node Title</span>
+                <span class="node-controls">
+                    <i class="fas fa-cog node-settings"></i>
+                    <i class="fas fa-times node-delete"></i>
+                </span>
+            </div>
+            <div class="node-body">
+                <div class="node-inputs">
+                    <!-- Input connectors will go here -->
+                </div>
+                <div class="node-outputs">
+                    <!-- Output connectors will go here -->
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('pipeline-canvas');
+            const nodeTemplate = document.getElementById('node-template');
+            let nodes = [];
+            let edges = [];
+            let draggedNode = null;
+            let offset = { x: 0, y: 0 };
+            let connectionStart = null;
+            let selectedNode = null;
+            
+            // Node type definitions with input/output types
+            const nodeTypes = {
+                'text-input': {
+                    title: 'Text Input',
+                    className: 'node-raw-text',
+                    inputs: [],
+                    outputs: [{ id: 'text', name: 'Raw Text', type: 'raw-text' }],
+                    properties: [
+                        { name: 'text', label: 'Text Content', type: 'textarea', default: '' }
+                    ]
+                },
+                'file-upload': {
+                    title: 'File Upload',
+                    className: 'node-raw-text',
+                    inputs: [],
+                    outputs: [{ id: 'text', name: 'Raw Text', type: 'raw-text' }],
+                    properties: [
+                        { name: 'file-path', label: 'File Path', type: 'file', default: '' }
+                    ]
+                },
+                'atomic-chunker': {
+                    title: 'Atomic Chunker',
+                    className: 'node-chunker',
+                    inputs: [{ id: 'text', name: 'Raw Text', type: 'raw-text' }],
+                    outputs: [{ id: 'chunks', name: 'Fact Chunks', type: 'fact-chunks' }],
+                    properties: [
+                        { name: 'template-first', label: 'First Pass Template', type: 'select', options: ['detailed', 'academic', 'conversational'], default: 'detailed' },
+                        { name: 'template-second', label: 'Second Pass Template', type: 'select', options: ['default', 'detailed_refinement'], default: 'default' }
+                    ]
+                },
+                'sliding-window': {
+                    title: 'Sliding Window',
+                    className: 'node-chunker',
+                    inputs: [{ id: 'text', name: 'Raw Text', type: 'raw-text' }],
+                    outputs: [{ id: 'chunks', name: 'Text Chunks', type: 'fact-chunks' }],
+                    properties: [
+                        { name: 'window-size', label: 'Window Size', type: 'number', default: 1000 },
+                        { name: 'overlap', label: 'Overlap', type: 'number', default: 100 }
+                    ]
+                },
+                'entity-extractor': {
+                    title: 'Entity Extractor',
+                    className: 'node-enricher',
+                    inputs: [{ id: 'chunks', name: 'Fact Chunks', type: 'fact-chunks' }],
+                    outputs: [{ id: 'enriched', name: 'Enriched Chunks', type: 'fact-chunks' }],
+                    properties: [
+                        { name: 'entity-template', label: 'Entity Extraction Template', type: 'select', options: ['default', 'detailed'], default: 'default' }
+                    ]
+                },
+                'topic-tagger': {
+                    title: 'Topic Tagger',
+                    className: 'node-enricher',
+                    inputs: [{ id: 'chunks', name: 'Fact Chunks', type: 'fact-chunks' }],
+                    outputs: [{ id: 'enriched', name: 'Enriched Chunks', type: 'fact-chunks' }],
+                    properties: [
+                        { name: 'topic-template', label: 'Topic Template', type: 'select', options: ['default', 'hierarchical'], default: 'default' }
+                    ]
+                },
+                'vector-store': {
+                    title: 'Vector Store',
+                    className: 'node-storage',
+                    inputs: [{ id: 'chunks', name: 'Fact Chunks', type: 'fact-chunks' }],
+                    outputs: [{ id: 'stored', name: 'Stored IDs', type: 'stored-data' }],
+                    properties: [
+                        { name: 'embedding-model', label: 'Embedding Model', type: 'select', options: ['openai', 'sentence-transformers'], default: 'openai' }
+                    ]
+                },
+                'graph-store': {
+                    title: 'Graph Store',
+                    className: 'node-storage',
+                    inputs: [{ id: 'chunks', name: 'Fact Chunks', type: 'fact-chunks' }],
+                    outputs: [{ id: 'stored', name: 'Stored IDs', type: 'stored-data' }],
+                    properties: [
+                        { name: 'relationship-type', label: 'Relationship Types', type: 'text', default: 'REFERENCES,CONTAINS,ABOUT' }
+                    ]
+                },
+                'visualizer': {
+                    title: 'Visualizer',
+                    className: 'node-output-node',
+                    inputs: [{ id: 'data', name: 'Data', type: 'fact-chunks,stored-data' }],
+                    outputs: [],
+                    properties: [
+                        { name: 'visualization-type', label: 'Visualization Type', type: 'select', options: ['table', 'graph', 'json'], default: 'table' }
+                    ]
+                }
+            };
+            
+            // Check if two types are compatible for connection
+            function areTypesCompatible(outputType, inputType) {
+                if (inputType.includes(',')) {
+                    const acceptedTypes = inputType.split(',');
+                    return acceptedTypes.includes(outputType);
+                }
+                return outputType === inputType;
+            }
+            
+            // Add a new node to the canvas
+            function addNode(type, x, y) {
+                const nodeTypeInfo = nodeTypes[type];
+                if (!nodeTypeInfo) return null;
+                
+                const nodeId = `node-${Date.now()}`;
+                const nodeElement = document.createElement('div');
+                nodeElement.innerHTML = nodeTemplate.innerHTML;
+                nodeElement.querySelector('.node').id = nodeId;
+                nodeElement.querySelector('.node').classList.add(nodeTypeInfo.className);
+                nodeElement.querySelector('.node-title').textContent = nodeTypeInfo.title;
+                
+                // Set position
+                const node = nodeElement.querySelector('.node');
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                
+                // Add node to canvas
+                canvas.appendChild(node);
+                
+                // Add input connectors
+                const inputsContainer = document.createElement('div');
+                inputsContainer.className = 'node-inputs';
+                nodeTypeInfo.inputs.forEach(input => {
+                    const inputElement = document.createElement('div');
+                    inputElement.className = 'node-input';
+                    inputElement.innerHTML = `
+                        <div class="connector input-connector" data-node-id="${nodeId}" data-connector-id="${input.id}" data-connector-type="${input.type}"></div>
+                        <div class="node-input-text">${input.name}</div>
+                    `;
+                    inputsContainer.appendChild(inputElement);
+                });
+                
+                // Add output connectors
+                const outputsContainer = document.createElement('div');
+                outputsContainer.className = 'node-outputs';
+                nodeTypeInfo.outputs.forEach(output => {
+                    const outputElement = document.createElement('div');
+                    outputElement.className = 'node-output';
+                    outputElement.innerHTML = `
+                        <div class="node-output-text">${output.name}</div>
+                        <div class="connector output-connector" data-node-id="${nodeId}" data-connector-id="${output.id}" data-connector-type="${output.type}"></div>
+                    `;
+                    outputsContainer.appendChild(outputElement);
+                });
+                
+                // Add connectors to node
+                node.querySelector('.node-body').appendChild(inputsContainer);
+                node.querySelector('.node-body').appendChild(outputsContainer);
+                
+                // Store node data
+                const nodeData = {
+                    id: nodeId,
+                    type: type,
+                    element: node,
+                    x: x,
+                    y: y,
+                    properties: {}
+                };
+                
+                // Set default property values
+                nodeTypeInfo.properties.forEach(prop => {
+                    nodeData.properties[prop.name] = prop.default;
+                });
+                
+                nodes.push(nodeData);
+                
+                // Add event listeners
+                setupNodeEventListeners(node, nodeData);
+                
+                return nodeData;
+            }
+            
+            // Set up event listeners for a node
+            function setupNodeEventListeners(node, nodeData) {
+                // Make node draggable
+                node.addEventListener('mousedown', function(e) {
+                    if (e.target.classList.contains('connector')) return;
+                    
+                    draggedNode = node;
+                    selectNode(nodeData);
+                    const rect = node.getBoundingClientRect();
+                    offset.x = e.clientX - rect.left;
+                    offset.y = e.clientY - rect.top;
+                    node.style.zIndex = 100;
+                });
+                
+                // Delete node
+                node.querySelector('.node-delete').addEventListener('click', function() {
+                    // Remove all edges connected to this node
+                    edges = edges.filter(edge => edge.startNodeId !== nodeData.id && edge.endNodeId !== nodeData.id);
+                    
+                    // Remove all edge elements
+                    const edgeElements = document.querySelectorAll('.edge');
+                    edgeElements.forEach(el => el.remove());
+                    
+                    // Redraw remaining edges
+                    edges.forEach(edge => drawEdge(edge));
+                    
+                    // Remove node from array and DOM
+                    nodes = nodes.filter(n => n.id !== nodeData.id);
+                    node.remove();
+                    
+                    // Clear selection if this was the selected node
+                    if (selectedNode && selectedNode.id === nodeData.id) {
+                        selectedNode = null;
+                        document.getElementById('node-properties-content').innerHTML = '';
+                        document.getElementById('preview-content').innerHTML = 
+                            '<p class="text-muted">Select a node to view its output</p>';
+                    }
+                });
+                
+                // Set up connector event listeners
+                const inputConnectors = node.querySelectorAll('.input-connector');
+                const outputConnectors = node.querySelectorAll('.output-connector');
+                
+                inputConnectors.forEach(connector => {
+                    connector.addEventListener('mouseup', function() {
+                        if (connectionStart) {
+                            const startNodeId = connectionStart.getAttribute('data-node-id');
+                            const startConnectorId = connectionStart.getAttribute('data-connector-id');
+                            const startConnectorType = connectionStart.getAttribute('data-connector-type');
+                            
+                            const endNodeId = connector.getAttribute('data-node-id');
+                            const endConnectorId = connector.getAttribute('data-connector-id');
+                            const endConnectorType = connector.getAttribute('data-connector-type');
+                            
+                            // Prevent connecting a node to itself
+                            if (startNodeId === endNodeId) {
+                                connectionStart = null;
+                                return;
+                            }
+                            
+                            // Check if types are compatible
+                            if (areTypesCompatible(startConnectorType, endConnectorType)) {
+                                // Create edge
+                                const edge = {
+                                    id: `edge-${Date.now()}`,
+                                    startNodeId,
+                                    startConnectorId,
+                                    endNodeId,
+                                    endConnectorId
+                                };
+                                edges.push(edge);
+                                drawEdge(edge);
+                            } else {
+                                alert(`Incompatible types: ${startConnectorType} cannot connect to ${endConnectorType}`);
+                            }
+                            
+                            connectionStart = null;
+                        }
+                    });
+                });
+                
+                outputConnectors.forEach(connector => {
+                    connector.addEventListener('mousedown', function(e) {
+                        e.stopPropagation();
+                        connectionStart = connector;
+                    });
+                });
+                
+                // Node settings
+                node.querySelector('.node-settings').addEventListener('click', function() {
+                    selectNode(nodeData);
+                });
+            }
+            
+            // Draw an edge between two connectors
+            function drawEdge(edge) {
+                // Find the nodes and connectors
+                const startNode = nodes.find(n => n.id === edge.startNodeId);
+                const endNode = nodes.find(n => n.id === edge.endNodeId);
+                
+                if (!startNode || !endNode) return;
+                
+                const startElement = startNode.element.querySelector(`[data-connector-id="${edge.startConnectorId}"]`);
+                const endElement = endNode.element.querySelector(`[data-connector-id="${edge.endConnectorId}"]`);
+                
+                if (!startElement || !endElement) return;
+                
+                // Get positions
+                const startRect = startElement.getBoundingClientRect();
+                const endRect = endElement.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+                
+                const startX = startRect.left + startRect.width / 2 - canvasRect.left;
+                const startY = startRect.top + startRect.height / 2 - canvasRect.top;
+                const endX = endRect.left + endRect.width / 2 - canvasRect.left;
+                const endY = endRect.top + endRect.height / 2 - canvasRect.top;
+                
+                // Create edge element
+                const edgeId = edge.id || `edge-${Date.now()}`;
+                let edgeElement = document.getElementById(edgeId);
+                
+                if (!edgeElement) {
+                    edgeElement = document.createElement('div');
+                    edgeElement.id = edgeId;
+                    edgeElement.className = 'edge';
+                    canvas.appendChild(edgeElement);
+                }
+                
+                // Calculate edge position and rotation
+                const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+                
+                edgeElement.style.width = `${length}px`;
+                edgeElement.style.left = `${startX}px`;
+                edgeElement.style.top = `${startY}px`;
+                edgeElement.style.transform = `rotate(${angle}deg)`;
+                edgeElement.style.transformOrigin = '0 0';
+                
+                return edgeElement;
+            }
+            
+            // Select a node and show its properties
+            function selectNode(nodeData) {
+                // Clear previous selection
+                if (selectedNode) {
+                    selectedNode.element.style.border = "";
+                }
+                
+                selectedNode = nodeData;
+                nodeData.element.style.border = "2px solid #007bff";
+                
+                // Show properties in the sidebar
+                const propertiesPanel = document.getElementById('node-properties-content');
+                const nodeTypeInfo = nodeTypes[nodeData.type];
+                
+                let html = `<h5>${nodeTypeInfo.title} Properties</h5>`;
+                
+                nodeTypeInfo.properties.forEach(prop => {
+                    const value = nodeData.properties[prop.name] || prop.default;
+                    
+                    switch (prop.type) {
+                        case 'text':
+                            html += `
+                                <div class="mb-3">
+                                    <label>${prop.label}</label>
+                                    <input type="text" class="form-control" data-prop="${prop.name}" value="${value}">
+                                </div>
+                            `;
+                            break;
+                        case 'number':
+                            html += `
+                                <div class="mb-3">
+                                    <label>${prop.label}</label>
+                                    <input type="number" class="form-control" data-prop="${prop.name}" value="${value}">
+                                </div>
+                            `;
+                            break;
+                        case 'textarea':
+                            html += `
+                                <div class="mb-3">
+                                    <label>${prop.label}</label>
+                                    <textarea class="form-control" data-prop="${prop.name}" rows="4">${value}</textarea>
+                                </div>
+                            `;
+                            break;
+                        case 'select':
+                            html += `
+                                <div class="mb-3">
+                                    <label>${prop.label}</label>
+                                    <select class="form-control" data-prop="${prop.name}">
+                                        ${prop.options.map(option => `
+                                            <option value="${option}" ${value === option ? 'selected' : ''}>${option}</option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                            `;
+                            break;
+                        case 'file':
+                            html += `
+                                <div class="mb-3">
+                                    <label>${prop.label}</label>
+                                    <input type="file" class="form-control" data-prop="${prop.name}">
+                                    <small class="text-muted">Current: ${value || 'None'}</small>
+                                </div>
+                            `;
+                            break;
+                    }
+                });
+                
+                html += `<button class="btn btn-primary btn-sm mt-2" id="save-properties">Save Properties</button>`;
+                
+                propertiesPanel.innerHTML = html;
+                
+                // Add event listener to save button
+                document.getElementById('save-properties').addEventListener('click', function() {
+                    const inputs = propertiesPanel.querySelectorAll('[data-prop]');
+                    inputs.forEach(input => {
+                        const propName = input.getAttribute('data-prop');
+                        nodeData.properties[propName] = input.value;
+                    });
+                    
+                    // Show a preview of the node output
+                    updateNodePreview(nodeData);
+                    
+                    // Update status
+                    document.getElementById('status-panel').innerHTML = 
+                        `<i class="fas fa-info-circle"></i> Updated properties for ${nodeTypeInfo.title}.`;
+                });
+                
+                // Show an initial preview
+                updateNodePreview(nodeData);
+            }
+            
+            // Update the preview for a node
+            function updateNodePreview(nodeData) {
+                const previewPanel = document.getElementById('preview-content');
+                const nodeTypeInfo = nodeTypes[nodeData.type];
+                
+                // For demonstration purposes, show different previews based on node type
+                let previewContent = '';
+                
+                switch (nodeData.type) {
+                    case 'text-input':
+                        const text = nodeData.properties['text'] || '';
+                        previewContent = `
+                            <h6>Raw Text Output</h6>
+                            <div class="border p-2 bg-light">
+                                ${text ? text.substring(0, 200) + (text.length > 200 ? '...' : '') : '<em>No text entered</em>'}
+                            </div>
+                            <div class="mt-2">
+                                <small>Total Characters: ${text.length}</small>
+                            </div>
+                        `;
+                        break;
+                    case 'file-upload':
+                        previewContent = `
+                            <h6>File Content (Preview)</h6>
+                            <div class="border p-2 bg-light">
+                                <em>File content will be loaded when the pipeline runs</em>
+                            </div>
+                        `;
+                        break;
+                    case 'atomic-chunker':
+                        previewContent = `
+                            <h6>Atomic Chunks Preview</h6>
+                            <div class="border p-2 bg-light">
+                                <p>Using templates:</p>
+                                <ul>
+                                    <li>First Pass: ${nodeData.properties['template-first']}</li>
+                                    <li>Second Pass: ${nodeData.properties['template-second']}</li>
+                                </ul>
+                                <p><em>Atomic facts will be generated when the pipeline runs</em></p>
+                            </div>
+                        `;
+                        break;
+                    case 'sliding-window':
+                        previewContent = `
+                            <h6>Sliding Window Chunks Preview</h6>
+                            <div class="border p-2 bg-light">
+                                <p>Window Size: ${nodeData.properties['window-size']} characters</p>
+                                <p>Overlap: ${nodeData.properties['overlap']} characters</p>
+                                <p><em>Text chunks will be generated when the pipeline runs</em></p>
+                            </div>
+                        `;
+                        break;
+                    case 'entity-extractor':
+                        previewContent = `
+                            <h6>Entity Extraction Preview</h6>
+                            <div class="border p-2 bg-light">
+                                <p>Using template: ${nodeData.properties['entity-template']}</p>
+                                <p><em>Entities will be extracted when the pipeline runs</em></p>
+                            </div>
+                        `;
+                        break;
+                    case 'topic-tagger':
+                        previewContent = `
+                            <h6>Topic Tagging Preview</h6>
+                            <div class="border p-2 bg-light">
+                                <p>Using template: ${nodeData.properties['topic-template']}</p>
+                                <p><em>Topics will be tagged when the pipeline runs</em></p>
+                            </div>
+                        `;
+                        break;
+                    case 'vector-store':
+                        previewContent = `
+                            <h6>Vector Store Preview</h6>
+                            <div class="border p-2 bg-light">
+                                <p>Embedding Model: ${nodeData.properties['embedding-model']}</p>
+                                <p><em>Vectors will be stored when the pipeline runs</em></p>
+                            </div>
+                        `;
+                        break;
+                    case 'graph-store':
+                        const relationshipTypes = nodeData.properties['relationship-type'] || '';
+                        const relationships = relationshipTypes.split(',');
+                        previewContent = `
+                            <h6>Graph Store Preview</h6>
+                            <div class="border p-2 bg-light">
+                                <p>Relationship Types:</p>
+                                <ul>
+                                    ${relationships.map(rel => `<li>${rel}</li>`).join('')}
+                                </ul>
+                                <p><em>Graph data will be stored when the pipeline runs</em></p>
+                            </div>
+                        `;
+                        break;
+                    case 'visualizer':
+                        previewContent = `
+                            <h6>Visualization Preview</h6>
+                            <div class="border p-2 bg-light">
+                                <p>Visualization Type: ${nodeData.properties['visualization-type']}</p>
+                                <p><em>Results will be visualized when the pipeline runs</em></p>
+                            </div>
+                        `;
+                        break;
+                    default:
+                        previewContent = `
+                            <h6>Node Output</h6>
+                            <div class="border p-2 bg-light">
+                                <em>Output will be generated when the pipeline runs</em>
+                            </div>
+                        `;
+                }
+                
+                previewPanel.innerHTML = previewContent;
+            }
+            
+            // Set up event listeners
+            document.addEventListener('mousemove', function(e) {
+                if (draggedNode) {
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const x = e.clientX - canvasRect.left - offset.x;
+                    const y = e.clientY - canvasRect.top - offset.y;
+                    
+                    draggedNode.style.left = `${Math.max(0, Math.min(canvasRect.width - draggedNode.offsetWidth, x))}px`;
+                    draggedNode.style.top = `${Math.max(0, Math.min(canvasRect.height - draggedNode.offsetHeight, y))}px`;
+                    
+                    // Update node data
+                    const nodeData = nodes.find(n => n.id === draggedNode.id);
+                    if (nodeData) {
+                        nodeData.x = parseInt(draggedNode.style.left);
+                        nodeData.y = parseInt(draggedNode.style.top);
+                    }
+                    
+                    // Update all connected edges
+                    const connectedEdges = edges.filter(edge => 
+                        edge.startNodeId === draggedNode.id || edge.endNodeId === draggedNode.id
+                    );
+                    
+                    connectedEdges.forEach(edge => {
+                        drawEdge(edge);
+                    });
+                }
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (draggedNode) {
+                    draggedNode.style.zIndex = "";
+                    draggedNode = null;
+                }
+                
+                if (connectionStart) {
+                    connectionStart = null;
+                }
+            });
+            
+            // Make palette nodes draggable
+            const paletteNodes = document.querySelectorAll('.node-palette button');
+            paletteNodes.forEach(btn => {
+                btn.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('node-type', btn.getAttribute('data-node-type'));
+                });
+            });
+            
+            // Handle dropping palette nodes onto canvas
+            canvas.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+            
+            canvas.addEventListener('drop', function(e) {
+                e.preventDefault();
+                const nodeType = e.dataTransfer.getData('node-type');
+                if (nodeType) {
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const x = e.clientX - canvasRect.left;
+                    const y = e.clientY - canvasRect.top;
+                    addNode(nodeType, x, y);
+                    
+                    // Update status
+                    document.getElementById('status-panel').innerHTML = 
+                        `<i class="fas fa-info-circle"></i> Added ${nodeTypes[nodeType].title} node.`;
+                }
+            });
+            
+            // Clear the canvas
+            document.getElementById('clear-canvas').addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear the canvas? All nodes and connections will be lost.')) {
+                    // Remove all nodes and edges
+                    const nodeElements = document.querySelectorAll('.node');
+                    const edgeElements = document.querySelectorAll('.edge');
+                    
+                    nodeElements.forEach(el => el.remove());
+                    edgeElements.forEach(el => el.remove());
+                    
+                    nodes = [];
+                    edges = [];
+                    selectedNode = null;
+                    
+                    // Clear properties and preview
+                    document.getElementById('node-properties-content').innerHTML = '';
+                    document.getElementById('preview-content').innerHTML = 
+                        '<p class="text-muted">Select a node to view its output</p>';
+                    
+                    // Update status
+                    document.getElementById('status-panel').innerHTML = 
+                        '<i class="fas fa-info-circle"></i> Canvas cleared. Drag components from the palette to get started.';
+                }
+            });
+            
+            // Save pipeline configuration
+            document.getElementById('save-pipeline').addEventListener('click', function() {
+                // Create a serializable version of the pipeline
+                const pipelineConfig = {
+                    nodes: nodes.map(node => ({
+                        id: node.id,
+                        type: node.type,
+                        x: parseInt(node.element.style.left),
+                        y: parseInt(node.element.style.top),
+                        properties: node.properties
+                    })),
+                    edges: edges.map(edge => ({
+                        id: edge.id,
+                        startNodeId: edge.startNodeId,
+                        startConnectorId: edge.startConnectorId,
+                        endNodeId: edge.endNodeId,
+                        endConnectorId: edge.endConnectorId
+                    }))
+                };
+                
+                // Convert to JSON and save
+                const pipelineJson = JSON.stringify(pipelineConfig, null, 2);
+                const blob = new Blob([pipelineJson], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pipeline-${Date.now()}.json`;
+                a.click();
+                
+                // Cleanup
+                URL.revokeObjectURL(url);
+                
+                // Update status
+                document.getElementById('status-panel').innerHTML = 
+                    '<i class="fas fa-check-circle"></i> Pipeline configuration saved.';
+            });
+            
+            // Load pipeline configuration
+            document.getElementById('load-pipeline').addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const pipelineConfig = JSON.parse(e.target.result);
+                            
+                            // Clear canvas
+                            document.getElementById('clear-canvas').click();
+                            
+                            // Load nodes
+                            pipelineConfig.nodes.forEach(nodeConfig => {
+                                const node = addNode(nodeConfig.type, nodeConfig.x, nodeConfig.y);
+                                if (node) {
+                                    node.id = nodeConfig.id;
+                                    node.element.id = nodeConfig.id;
+                                    
+                                    // Set properties
+                                    for (const prop in nodeConfig.properties) {
+                                        node.properties[prop] = nodeConfig.properties[prop];
+                                    }
+                                }
+                            });
+                            
+                            // Load edges
+                            pipelineConfig.edges.forEach(edgeConfig => {
+                                const edge = {
+                                    id: edgeConfig.id,
+                                    startNodeId: edgeConfig.startNodeId,
+                                    startConnectorId: edgeConfig.startConnectorId,
+                                    endNodeId: edgeConfig.endNodeId,
+                                    endConnectorId: edgeConfig.endConnectorId
+                                };
+                                edges.push(edge);
+                                drawEdge(edge);
+                            });
+                            
+                            // Update status
+                            document.getElementById('status-panel').innerHTML = 
+                                '<i class="fas fa-check-circle"></i> Pipeline configuration loaded.';
+                        } catch (error) {
+                            alert('Error loading pipeline: ' + error.message);
+                        }
+                    };
+                    
+                    reader.readAsText(file);
+                };
+                
+                input.click();
+            });
+            
+            // Run pipeline
+            document.getElementById('run-pipeline').addEventListener('click', function() {
+                // Here you would actually run the pipeline, but for now just simulate
+                document.getElementById('status-panel').innerHTML = 
+                    '<i class="fas fa-spin fa-spinner"></i> Pipeline running...';
+                
+                setTimeout(() => {
+                    document.getElementById('status-panel').innerHTML = 
+                        '<i class="fas fa-check-circle"></i> Pipeline completed. Check node outputs for results.';
+                }, 2000);
+                
+                // Update previews with simulated results
+                if (selectedNode) {
+                    updateNodePreview(selectedNode);
+                }
+            });
+            
+            // Add a few example nodes to get started
+            setTimeout(() => {
+                const textInput = addNode('text-input', 100, 100);
+                if (textInput) {
+                    textInput.properties['text'] = 'This is a sample transcript text that will be processed through the pipeline. It contains information about various topics and entities.';
+                }
+                
+                const atomicChunker = addNode('atomic-chunker', 400, 100);
+                const entityExtractor = addNode('entity-extractor', 700, 100);
+                const graphStore = addNode('graph-store', 1000, 100);
+                
+                // Connect the nodes
+                if (textInput && atomicChunker) {
+                    const edge1 = {
+                        id: `edge-${Date.now()}-1`,
+                        startNodeId: textInput.id,
+                        startConnectorId: 'text',
+                        endNodeId: atomicChunker.id,
+                        endConnectorId: 'text'
+                    };
+                    edges.push(edge1);
+                    drawEdge(edge1);
+                }
+                
+                if (atomicChunker && entityExtractor) {
+                    const edge2 = {
+                        id: `edge-${Date.now()}-2`,
+                        startNodeId: atomicChunker.id,
+                        startConnectorId: 'chunks',
+                        endNodeId: entityExtractor.id,
+                        endConnectorId: 'chunks'
+                    };
+                    edges.push(edge2);
+                    drawEdge(edge2);
+                }
+                
+                if (entityExtractor && graphStore) {
+                    const edge3 = {
+                        id: `edge-${Date.now()}-3`,
+                        startNodeId: entityExtractor.id,
+                        startConnectorId: 'enriched',
+                        endNodeId: graphStore.id,
+                        endConnectorId: 'chunks'
+                    };
+                    edges.push(edge3);
+                    drawEdge(edge3);
+                }
+                
+                document.getElementById('status-panel').innerHTML = 
+                    '<i class="fas fa-info-circle"></i> Example pipeline loaded. Click on nodes to view and edit properties.';
+            }, 500);
+        });
+    </script>
+</body>
+</html>

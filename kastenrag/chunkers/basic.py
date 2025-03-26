@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 from ..utils.registry import register_component
 
 
+@register_component("chunker", "sliding_window")
 class SlidingWindowChunker:
     """
     Basic sliding window text chunker.
@@ -44,6 +45,18 @@ class SlidingWindowChunker:
         Returns:
             List of chunk dictionaries
         """
+        # If text is smaller than window size, return as a single chunk
+        if len(text) <= self.window_size:
+            return [{
+                "text": text,
+                "metadata": {
+                    "chunk_id": "chunk-0",
+                    "start_char": 0,
+                    "end_char": len(text),
+                    "word_count": len(text.split())
+                }
+            }]
+        
         chunks = []
         
         # Simple implementation - just split by window size with overlap
@@ -73,7 +86,8 @@ class SlidingWindowChunker:
                     "metadata": {
                         "start_char": start,
                         "end_char": end,
-                        "chunk_id": f"chunk_{len(chunks)}",
+                        "chunk_id": f"chunk-{len(chunks)}",
+                        "word_count": len(chunk_text.split())
                     }
                 })
             
@@ -83,7 +97,7 @@ class SlidingWindowChunker:
         return chunks
 
 
-@register_component("chunker", "sliding_window")
+# Legacy factory function - class is now registered directly with decorator
 def create_sliding_window_chunker(**kwargs):
     """Factory function for creating a sliding window chunker."""
     return SlidingWindowChunker(**kwargs)

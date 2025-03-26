@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline Run Results - KastenRAG</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar {
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-menu {
+            padding: 0;
+            list-style: none;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-menu a {
+            display: block;
+            padding: 10px 20px;
+            color: #333;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: #e9ecef;
+            border-left-color: #0d6efd;
+        }
+        
+        .sidebar-menu a i {
+            margin-right: 10px;
+        }
+        
+        .content-wrapper {
+            margin-left: 280px;
+            padding: 20px;
+            flex-grow: 1;
+            overflow: auto;
+        }
+        
+        .section-title {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .json-viewer {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .node-result {
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .node-result-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .node-result-body {
+            padding: 15px;
+        }
+        
+        .node-status-success {
+            color: #198754;
+        }
+        
+        .node-status-error {
+            color: #dc3545;
+        }
+        
+        .key {
+            color: #0d6efd;
+        }
+        
+        .string {
+            color: #198754;
+        }
+        
+        .number {
+            color: #fd7e14;
+        }
+        
+        .boolean {
+            color: #6f42c1;
+        }
+        
+        .null {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4>KastenRAG</h4>
+            <p class="text-muted mb-0">Pipeline Run Results</p>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li>
+                <a href="{{ url_for('index') }}">
+                    <i class="bi bi-house"></i> Home
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('pipeline_builder') }}">
+                    <i class="bi bi-diagram-3"></i> Pipeline Builder
+                </a>
+            </li>
+            <li class="sidebar-divider my-3 border-top"></li>
+            <li>
+                <a href="#pipeline-info" class="active">
+                    <i class="bi bi-info-circle"></i> Pipeline Information
+                </a>
+            </li>
+            <li>
+                <a href="#execution-results">
+                    <i class="bi bi-check2-circle"></i> Execution Results
+                </a>
+            </li>
+            <li>
+                <a href="#node-outputs">
+                    <i class="bi bi-file-earmark-text"></i> Node Outputs
+                </a>
+            </li>
+            <li>
+                <a href="#errors">
+                    <i class="bi bi-exclamation-triangle"></i> Errors
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        <!-- Flash messages -->
+        {% if get_flashed_messages() %}
+        <div class="flash-messages">
+            {% for message in get_flashed_messages() %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Pipeline Run Results</h1>
+            <div>
+                <a href="{{ url_for('pipeline_builder') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Pipeline Builder
+                </a>
+            </div>
+        </div>
+        
+        <section id="pipeline-info" class="mb-5">
+            <h2 class="section-title">Pipeline Information</h2>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Run ID:</strong> {{ run.id }}</p>
+                            <p><strong>Pipeline ID:</strong> {{ run.pipeline_id }}</p>
+                            <p><strong>Executed At:</strong> {{ run.executed_at }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Pipeline Name:</strong> {{ pipeline.name if pipeline else 'Unknown' }}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">Completed</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="execution-results" class="mb-5">
+            <h2 class="section-title">Execution Results</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>Execution Order</strong>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for node_id in run.results.execution_order %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ node_id }}
+                            {% if node_id in run.results.errors %}
+                            <span class="badge bg-danger">Error</span>
+                            {% else %}
+                            <span class="badge bg-success">Success</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <section id="node-outputs" class="mb-5">
+            <h2 class="section-title">Node Outputs</h2>
+            
+            {% for node_id in run.results.execution_order %}
+            <div class="node-result mb-4">
+                <div class="node-result-header">
+                    <h5 class="mb-0">Node: {{ node_id }}</h5>
+                    {% if node_id in run.results.errors %}
+                    <span class="badge bg-danger">Error</span>
+                    {% else %}
+                    <span class="badge bg-success">Success</span>
+                    {% endif %}
+                </div>
+                <div class="node-result-body">
+                    {% if node_id in run.results.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> {{ run.results.errors[node_id] }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if node_id in run.results.results %}
+                    <h6>Output:</h6>
+                    <div class="json-viewer">
+                        <pre id="output-{{ node_id }}">{{ run.results.results[node_id] | tojson(indent=2) }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        
+        <section id="errors" class="mb-5">
+            <h2 class="section-title">Errors</h2>
+            
+            {% if run.results.errors %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="json-viewer">
+                        <pre>{{ run.results.errors | tojson(indent=2) }}</pre>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle"></i> No errors occurred during pipeline execution.
+            </div>
+            {% endif %}
+        </section>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Pretty-print JSON
+        document.addEventListener('DOMContentLoaded', function() {
+            const jsonViewers = document.querySelectorAll('.json-viewer pre');
+            
+            jsonViewers.forEach(viewer => {
+                try {
+                    const jsonObj = JSON.parse(viewer.textContent);
+                    viewer.innerHTML = syntaxHighlight(jsonObj);
+                } catch (e) {
+                    console.error('Failed to parse JSON:', e);
+                }
+            });
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 20,
+                            behavior: 'smooth'
+                        });
+                        
+                        // Update active state
+                        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+                            link.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                    }
+                });
+            });
+        });
+        
+        // Syntax highlighting for JSON
+        function syntaxHighlight(obj) {
+            const json = JSON.stringify(obj, null, 2);
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'key';
+                        // Remove quotes and colon from the key
+                        match = match.replace(/"/g, '').replace(/:$/, ':');
+                    } else {
+                        cls = 'string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+    </script>
+</body>
+</html>
