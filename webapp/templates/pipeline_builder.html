@@ -73,6 +73,26 @@
             z-index: 0;
             pointer-events: none;
         }
+        .temp-edge {
+            height: 3px;
+            background-color: #007bff;
+            opacity: 0.7;
+            z-index: 100;
+        }
+        .connector {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .connector:hover {
+            transform: translateY(-50%) scale(1.2);
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
         .node-input-text, .node-output-text {
             width: 100%;
             position: relative;
@@ -261,6 +281,7 @@
             let offset = { x: 0, y: 0 };
             let connectionStart = null;
             let selectedNode = null;
+            let tempConnectionLine = null;
             
             // Node type definitions with input/output types
             const nodeTypes = {
@@ -475,47 +496,43 @@
                 const outputConnectors = node.querySelectorAll('.output-connector');
                 
                 inputConnectors.forEach(connector => {
-                    connector.addEventListener('mouseup', function() {
+                    // Add visual indication of valid drop target on hover
+                    connector.addEventListener('mouseover', function() {
                         if (connectionStart) {
-                            const startNodeId = connectionStart.getAttribute('data-node-id');
-                            const startConnectorId = connectionStart.getAttribute('data-connector-id');
                             const startConnectorType = connectionStart.getAttribute('data-connector-type');
-                            
-                            const endNodeId = connector.getAttribute('data-node-id');
-                            const endConnectorId = connector.getAttribute('data-connector-id');
                             const endConnectorType = connector.getAttribute('data-connector-type');
                             
-                            // Prevent connecting a node to itself
-                            if (startNodeId === endNodeId) {
-                                connectionStart = null;
-                                return;
-                            }
-                            
-                            // Check if types are compatible
                             if (areTypesCompatible(startConnectorType, endConnectorType)) {
-                                // Create edge
-                                const edge = {
-                                    id: `edge-${Date.now()}`,
-                                    startNodeId,
-                                    startConnectorId,
-                                    endNodeId,
-                                    endConnectorId
-                                };
-                                edges.push(edge);
-                                drawEdge(edge);
+                                connector.style.boxShadow = '0 0 5px 2px #00ff00';
                             } else {
-                                alert(`Incompatible types: ${startConnectorType} cannot connect to ${endConnectorType}`);
+                                connector.style.boxShadow = '0 0 5px 2px #ff0000';
                             }
-                            
-                            connectionStart = null;
                         }
+                    });
+                    
+                    connector.addEventListener('mouseout', function() {
+                        connector.style.boxShadow = '';
                     });
                 });
                 
                 outputConnectors.forEach(connector => {
                     connector.addEventListener('mousedown', function(e) {
-                        e.stopPropagation();
+                        e.stopPropagation(); // Prevent node dragging when clicking connector
                         connectionStart = connector;
+                        createTempConnectionLine(); // Create the temporary line immediately
+                        
+                        // Show connection status
+                        document.getElementById('status-panel').innerHTML = 
+                            `<i class="fas fa-info-circle"></i> Creating connection from ${connector.getAttribute('data-node-id')}:${connector.getAttribute('data-connector-id')}. Click on an input connector to complete.`;
+                    });
+                    
+                    // Add visual indication on hover
+                    connector.addEventListener('mouseover', function() {
+                        connector.style.boxShadow = '0 0 5px 2px #007bff';
+                    });
+                    
+                    connector.addEventListener('mouseout', function() {
+                        connector.style.boxShadow = '';
                     });
                 });
                 
@@ -779,9 +796,48 @@
             }
             
             // Set up event listeners
+            // Function to create a temporary connection line
+            function createTempConnectionLine() {
+                if (tempConnectionLine) {
+                    tempConnectionLine.remove();
+                }
+                tempConnectionLine = document.createElement('div');
+                tempConnectionLine.className = 'edge temp-edge';
+                tempConnectionLine.style.zIndex = '50';
+                tempConnectionLine.style.backgroundColor = '#6c757d';
+                tempConnectionLine.style.opacity = '0.6';
+                canvas.appendChild(tempConnectionLine);
+                return tempConnectionLine;
+            }
+            
+            // Function to update the temporary connection line
+            function updateTempConnectionLine(startX, startY, endX, endY) {
+                if (!tempConnectionLine) {
+                    tempConnectionLine = createTempConnectionLine();
+                }
+                
+                const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+                
+                tempConnectionLine.style.width = `${length}px`;
+                tempConnectionLine.style.left = `${startX}px`;
+                tempConnectionLine.style.top = `${startY}px`;
+                tempConnectionLine.style.transform = `rotate(${angle}deg)`;
+                tempConnectionLine.style.transformOrigin = '0 0';
+            }
+            
+            // Function to clear the temporary connection line
+            function clearTempConnectionLine() {
+                if (tempConnectionLine) {
+                    tempConnectionLine.remove();
+                    tempConnectionLine = null;
+                }
+            }
+
             document.addEventListener('mousemove', function(e) {
+                const canvasRect = canvas.getBoundingClientRect();
+                
                 if (draggedNode) {
-                    const canvasRect = canvas.getBoundingClientRect();
                     const x = e.clientX - canvasRect.left - offset.x;
                     const y = e.clientY - canvasRect.top - offset.y;
                     
@@ -804,15 +860,74 @@
                         drawEdge(edge);
                     });
                 }
+                
+                // Update the temp connection line if we're making a connection
+                if (connectionStart) {
+                    const startElement = connectionStart;
+                    const startRect = startElement.getBoundingClientRect();
+                    
+                    const startX = startRect.left + startRect.width / 2 - canvasRect.left;
+                    const startY = startRect.top + startRect.height / 2 - canvasRect.top;
+                    const endX = e.clientX - canvasRect.left;
+                    const endY = e.clientY - canvasRect.top;
+                    
+                    updateTempConnectionLine(startX, startY, endX, endY);
+                }
             });
             
-            document.addEventListener('mouseup', function() {
+            document.addEventListener('mouseup', function(e) {
                 if (draggedNode) {
                     draggedNode.style.zIndex = "";
                     draggedNode = null;
                 }
                 
                 if (connectionStart) {
+                    // Clear temporary connection line
+                    clearTempConnectionLine();
+                    
+                    // Get the element under the mouse pointer
+                    const elementsUnderMouse = document.elementsFromPoint(e.clientX, e.clientY);
+                    const inputConnector = elementsUnderMouse.find(
+                        el => el.classList && el.classList.contains('input-connector')
+                    );
+                    
+                    // If an input connector was found, create a connection
+                    if (inputConnector) {
+                        const startNodeId = connectionStart.getAttribute('data-node-id');
+                        const startConnectorId = connectionStart.getAttribute('data-connector-id');
+                        const startConnectorType = connectionStart.getAttribute('data-connector-type');
+                        
+                        const endNodeId = inputConnector.getAttribute('data-node-id');
+                        const endConnectorId = inputConnector.getAttribute('data-connector-id');
+                        const endConnectorType = inputConnector.getAttribute('data-connector-type');
+                        
+                        // Prevent connecting a node to itself
+                        if (startNodeId === endNodeId) {
+                            connectionStart = null;
+                            return;
+                        }
+                        
+                        // Check if types are compatible
+                        if (areTypesCompatible(startConnectorType, endConnectorType)) {
+                            // Create edge
+                            const edge = {
+                                id: `edge-${Date.now()}`,
+                                startNodeId,
+                                startConnectorId,
+                                endNodeId,
+                                endConnectorId
+                            };
+                            edges.push(edge);
+                            drawEdge(edge);
+                            
+                            // Update status
+                            document.getElementById('status-panel').innerHTML = 
+                                `<i class="fas fa-info-circle"></i> Connected ${startNodeId}:${startConnectorId} to ${endNodeId}:${endConnectorId}.`;
+                        } else {
+                            alert(`Incompatible types: ${startConnectorType} cannot connect to ${endConnectorType}`);
+                        }
+                    }
+                    
                     connectionStart = null;
                 }
             });
