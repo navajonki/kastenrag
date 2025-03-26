@@ -756,13 +756,29 @@ def run_pipeline(pipeline_id):
         # Get the pipeline configuration
         pipeline_config = pipeline_data.get("config", {})
         
+        # Debug the pipeline configuration
+        print(f"Pipeline configuration: {json.dumps(pipeline_config, indent=2)[:500]}... (truncated)")
+        print(f"Nodes: {len(pipeline_config.get('nodes', []))}, Edges: {len(pipeline_config.get('edges', []))}")
+        
+        # Check for critical issues in the configuration
+        if not pipeline_config.get('nodes'):
+            return jsonify({"error": "Pipeline has no nodes"}), 400
+            
+        if not pipeline_config.get('edges'):
+            return jsonify({"error": "Pipeline has no connections between nodes"}), 400
+        
         # Import the pipeline executor
         from kastenrag.pipeline.pipeline_executor import PipelineExecutor
         
         # Create and initialize the pipeline executor
         executor = PipelineExecutor(pipeline_config)
+        print(f"Created executor with {len(executor.nodes)} nodes")
+        
+        # Initialize the pipeline
         if not executor.initialize():
             return jsonify({"error": "Failed to initialize pipeline"}), 500
+            
+        print(f"Pipeline initialized with execution order: {executor.execution_order}")
         
         # Execute the pipeline
         print("Executing pipeline with nodes:", list(executor.nodes.keys()))

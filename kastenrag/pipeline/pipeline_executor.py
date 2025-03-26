@@ -501,42 +501,66 @@ class PipelineExecutor:
         self.results = {}
         self.errors = {}
         self.logger = logging.getLogger(__name__)
+        
+        # Extract nodes and edges immediately
+        self._extract_nodes_and_edges()
+    
+    def _extract_nodes_and_edges(self):
+        """Extract nodes and edges from the configuration."""
+        nodes_config = self.config.get('nodes', [])
+        edges_config = self.config.get('edges', [])
+        
+        print(f"Extracting {len(nodes_config)} nodes and {len(edges_config)} edges from configuration")
+        
+        # Create node instances
+        for node_config in nodes_config:
+            node_id = node_config.get('id')
+            node_type = node_config.get('type')
+            properties = node_config.get('properties', {})
+            
+            if node_type not in self.NODE_TYPES:
+                print(f"Warning: Unknown node type: {node_type}")
+                continue
+            
+            node_class = self.NODE_TYPES[node_type]
+            self.nodes[node_id] = node_class(node_id, node_type, properties)
+        
+        # Store edge configurations
+        for edge_config in edges_config:
+            edge = {
+                'id': edge_config.get('id'),
+                'startNodeId': edge_config.get('startNodeId'),
+                'startConnectorId': edge_config.get('startConnectorId'),
+                'endNodeId': edge_config.get('endNodeId'),
+                'endConnectorId': edge_config.get('endConnectorId')
+            }
+            self.edges.append(edge)
+        
+        print(f"Created {len(self.nodes)} node instances and {len(self.edges)} edge configurations")
     
     def initialize(self):
-        """Initialize the pipeline from the configuration."""
+        """Initialize the pipeline and compute execution order."""
         try:
-            # Extract nodes and edges from the configuration
-            nodes_config = self.config.get('nodes', [])
-            edges_config = self.config.get('edges', [])
-            
-            # Create node instances
-            for node_config in nodes_config:
-                node_id = node_config.get('id')
-                node_type = node_config.get('type')
-                properties = node_config.get('properties', {})
+            if not self.nodes:
+                print("No nodes found in the pipeline configuration")
+                return False
                 
-                if node_type not in self.NODE_TYPES:
-                    raise ValueError(f"Unknown node type: {node_type}")
-                
-                node_class = self.NODE_TYPES[node_type]
-                self.nodes[node_id] = node_class(node_id, node_type, properties)
-            
-            # Store edge configurations
-            for edge_config in edges_config:
-                self.edges.append({
-                    'id': edge_config.get('id'),
-                    'startNodeId': edge_config.get('startNodeId'),
-                    'startConnectorId': edge_config.get('startConnectorId'),
-                    'endNodeId': edge_config.get('endNodeId'),
-                    'endConnectorId': edge_config.get('endConnectorId')
-                })
+            if not self.edges:
+                print("No edges found in the pipeline configuration")
+                return False
             
             # Compute execution order (topological sort)
             self._compute_execution_order()
             
+            if not self.execution_order:
+                print("Failed to compute execution order")
+                return False
+                
+            print(f"Pipeline initialized with execution order: {self.execution_order}")
             return True
         except Exception as e:
             self.logger.error(f"Error initializing pipeline: {str(e)}")
+            print(f"Error initializing pipeline: {str(e)}")
             return False
     
     def _compute_execution_order(self):

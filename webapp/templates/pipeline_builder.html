@@ -1165,6 +1165,23 @@
                         }))
                     };
                     
+                    // Check if pipeline has nodes and edges
+                    if (pipelineConfig.nodes.length === 0) {
+                        alert("Cannot save an empty pipeline. Please add some nodes first.");
+                        return;
+                    }
+
+                    if (pipelineConfig.edges.length === 0) {
+                        alert("Pipeline has no connections. Please connect your nodes before saving.");
+                        return;
+                    }
+                    
+                    // Show saving status
+                    document.getElementById('status-panel').innerHTML = 
+                        '<i class="fas fa-spin fa-spinner"></i> Saving pipeline...';
+                    
+                    console.log("Saving pipeline configuration:", pipelineConfig);
+                    
                     // Save pipeline to server
                     fetch('/api/pipelines', {
                         method: 'POST',
