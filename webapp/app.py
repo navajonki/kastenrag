@@ -776,14 +776,43 @@ def run_pipeline(pipeline_id):
         run_dir = Path(__file__).parent / "pipeline_runs"
         run_dir.mkdir(parents=True, exist_ok=True)
         
+        # Ensure result has the right structure
+        if not isinstance(result, dict):
+            print(f"CRITICAL: Execution result is not a dictionary: {type(result)}")
+            result = {
+                "execution_order": [],
+                "results": {},
+                "errors": {"pipeline": "Invalid execution result structure"}
+            }
+        
+        # Validate result structure - fix if missing any critical keys
+        if "execution_order" not in result:
+            result["execution_order"] = []
+            print("CRITICAL: Missing execution_order in result, added empty list")
+            
+        if "results" not in result:
+            result["results"] = {}
+            print("CRITICAL: Missing results dict in result, added empty dict")
+            
+        if "errors" not in result:
+            result["errors"] = {}
+            print("CRITICAL: Missing errors dict in result, added empty dict")
+        
+        # Create run data structure
+        run_data = {
+            "id": run_id,
+            "pipeline_id": pipeline_id,
+            "executed_at": datetime.now().isoformat(),
+            "results": result
+        }
+        
+        # Print run data for debugging 
+        print(f"Saving run data: {json.dumps(run_data, indent=2)[:500]}... (truncated)")
+        
+        # Save run data to file
         run_file = run_dir / f"{run_id}.json"
         with open(run_file, 'w') as f:
-            json.dump({
-                "id": run_id,
-                "pipeline_id": pipeline_id,
-                "executed_at": datetime.now().isoformat(),
-                "results": result
-            }, f, indent=2)
+            json.dump(run_data, f, indent=2)
         
         # Return a response with the run ID
         return jsonify({

@@ -252,17 +252,50 @@
             <!-- Debug information -->
             <div class="alert alert-info">
                 <p><strong>Debug Information:</strong></p>
-                <p>execution_order: {{ run.results.execution_order|default('Not found', true) }}</p>
-                <p>results keys: {{ run.results.results.keys()|default('No results found', true)|list }}</p>
-                <p>errors keys: {{ run.results.errors.keys()|default('No errors found', true)|list }}</p>
                 
-                {% if run.results and run.results.results %}
-                    {% for node_id, node_output in run.results.results.items() %}
-                        <details>
-                            <summary>Node {{ node_id }} output keys: {{ node_output.keys()|list }}</summary>
-                            <pre>{{ node_output|tojson(indent=2) }}</pre>
-                        </details>
-                    {% endfor %}
+                <p>Run data structure:</p>
+                <details>
+                    <summary>View complete raw run data</summary>
+                    <pre>{{ run|tojson(indent=2) }}</pre>
+                </details>
+                
+                <hr>
+                
+                <p><strong>Results structure check:</strong></p>
+                {% if run %}
+                    {% if 'results' in run %}
+                        <p>✅ 'results' key exists in run data</p>
+                        
+                        {% if run.results %}
+                            <p>✅ 'results' has content</p>
+                            
+                            {% if 'execution_order' in run.results %}
+                                <p>✅ 'execution_order' exists: {{ run.results.execution_order }}</p>
+                            {% else %}
+                                <p>❌ 'execution_order' is missing from results</p>
+                            {% endif %}
+                            
+                            {% if 'results' in run.results %}
+                                <p>✅ 'results' dict exists with {{ run.results.results|length }} items</p>
+                                <p>Keys: {{ run.results.results.keys()|list }}</p>
+                            {% else %}
+                                <p>❌ 'results' dict is missing from results</p>
+                            {% endif %}
+                            
+                            {% if 'errors' in run.results %}
+                                <p>✅ 'errors' dict exists with {{ run.results.errors|length }} items</p>
+                                <p>Keys: {{ run.results.errors.keys()|list }}</p>
+                            {% else %}
+                                <p>❌ 'errors' dict is missing from results</p>
+                            {% endif %}
+                        {% else %}
+                            <p>❌ 'results' is empty</p>
+                        {% endif %}
+                    {% else %}
+                        <p>❌ 'results' key is missing from run data</p>
+                    {% endif %}
+                {% else %}
+                    <p>❌ Run data is empty</p>
                 {% endif %}
             </div>
             
