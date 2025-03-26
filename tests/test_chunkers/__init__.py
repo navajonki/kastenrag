@@ -1,1 +1,1 @@
-"""Tests for the chunking components."""
+"""Test package for chunkers."""

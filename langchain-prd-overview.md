@@ -218,6 +218,63 @@ This modular architecture enables:
 - Support query-dependent routing to optimal retrieval strategy
 - Implement caching layer for frequent queries with invalidation mechanisms
 
+##### **4.4.3.1 Specific Hybrid Retrieval Approaches**
+
+**1. Sparse + Dense Hybrid Search**
+- **Implementation:** Combine traditional keyword search (BM25) with vector search through score fusion
+- **Mechanism:** 
+  - Query both the keyword index and vector index in parallel
+  - Retrieve top-k results from each approach
+  - Merge results using a weighted combination of scores or reciprocal rank fusion
+  - Optionally apply a cross-encoder re-ranker for final ranking
+- **Benefits:** 
+  - Improves ranking quality by combining strengths of both approaches
+  - BM25 excels at exact matches where dense retrieval might miss them
+  - Dense retrieval captures semantic matches where BM25 fails due to vocabulary mismatch
+  - Particularly effective in specialized domains with domain-specific terminology
+- **LangChain Implementation:** Use EnsembleRetriever or combine multiple retrievers with custom scoring logic
+
+**2. Vector + Graph Hybrid (GraphRAG)**
+- **Implementation:** Integrate knowledge graph with vector store, using either:
+  - Sequential approach: Vector search first, then graph expansion
+  - Parallel approach: Query both and combine evidence
+- **Mechanism:**
+  - For sequential: Retrieve text chunks via vectors, extract entities, then consult the graph for additional facts linking those entities
+  - For parallel: Perform vector similarity search and graph traversal independently, then combine results
+- **Benefits:**
+  - Ensures retrieved facts are connected and contextually appropriate
+  - Maintains broader coverage of unstructured information
+  - Studies show ~30% improvement in accuracy compared to vector search alone
+  - Enables multi-hop reasoning through graph relationships
+- **LangChain Implementation:** Combine a vector store retriever with a graph store retriever, using custom routing logic
+
+**3. Hierarchical or Multi-step Retrieval**
+- **Implementation:** Use a two-stage retrieval process where one method narrows the candidate set and another refines it
+- **Mechanism:**
+  - First stage uses high-recall method (e.g., BM25 retrieving top-100 candidates)
+  - Second stage uses high-precision method (e.g., neural re-ranker using cross-attention)
+  - Alternatively, use dense retrieval for candidates followed by keyword/graph filtering
+- **Benefits:**
+  - First stage ensures broad coverage with high recall
+  - Second stage ensures relevance with high precision
+  - Reduces computational cost by applying expensive operations only to a subset of documents
+  - Can be extended to include query reformulation where an LLM creates multiple sub-queries
+- **LangChain Implementation:** Create a custom retriever chain with multiple steps and intermediate filtering
+
+**4. Hierarchical Chunking with Multi-level Indexing**
+- **Implementation:** Store and index chunks at multiple levels of granularity (sections, paragraphs, sentences)
+- **Mechanism:**
+  - Create hierarchical chunk relationships (parent-child)
+  - Query first retrieves relevant higher-level chunks
+  - Refine search within the context of those higher-level chunks
+  - Combine information from different granularity levels
+- **Benefits:**
+  - Preserves document structure and context
+  - Allows retrieval at appropriate levels of detail
+  - Improves context coherence in responses
+  - Especially useful for structured documents like academic papers or legal contracts
+- **LangChain Implementation:** Create a custom retriever that navigates the hierarchy, using parent chunks to inform retrieval of child chunks
+
 ### **4.5 Query & Retrieval System**
 
 #### **4.5.1 RAG Pipeline Implementation**

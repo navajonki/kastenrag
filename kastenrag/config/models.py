@@ -22,14 +22,42 @@ class TranscriberConfig(BaseModel):
 
 class ChunkerConfig(BaseModel):
     """Configuration for text chunking."""
+    type: str = Field("sliding_window", description="Type of chunker to use")
     window_size: int = Field(1000, description="Token window size for chunking")
     overlap: int = Field(100, description="Token overlap between chunks")
     boundary_rules: List[str] = Field(
         ["sentence", "paragraph"], 
         description="Natural boundary rules to respect"
     )
-    first_pass_prompt_template: Optional[str] = None
-    second_pass_prompt_template: Optional[str] = None
+    # Prompt template configuration
+    first_pass_template_name: Optional[str] = Field(
+        None, 
+        description="Name of the template to use for first pass extraction"
+    )
+    second_pass_template_name: Optional[str] = Field(
+        None, 
+        description="Name of the template to use for second pass refinement"
+    )
+    # Legacy prompt templates (deprecated)
+    first_pass_prompt_template: Optional[str] = Field(
+        None, 
+        description="(Deprecated) Direct prompt template for first pass extraction"
+    )
+    second_pass_prompt_template: Optional[str] = Field(
+        None, 
+        description="(Deprecated) Direct prompt template for second pass refinement"
+    )
+    # Metadata enrichment flags
+    entity_resolution: bool = Field(True, description="Whether to resolve entity references")
+    topic_tagging: bool = Field(True, description="Whether to tag topics in chunks")
+    relationship_extraction: bool = Field(True, description="Whether to extract entity relationships")
+    
+    @validator('type')
+    def valid_chunker_type(cls, v):
+        valid_types = ["sliding_window", "atomic"]
+        if v not in valid_types:
+            raise ValueError(f"Chunker type must be one of {valid_types}")
+        return v
 
 
 class EmbeddingConfig(BaseModel):

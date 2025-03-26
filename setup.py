@@ -21,9 +21,11 @@ setup(
         "py2neo>=2021.2.3",
         "openai>=1.0.0",
         "anthropic>=0.10.0",
+        "replicate>=1.0.4",
         "tqdm>=4.65.0",
         "loguru>=0.7.0",
         "pyyaml>=6.0.0",
+        "python-dotenv>=1.0.0",
     ],
     entry_points={
         "console_scripts": [

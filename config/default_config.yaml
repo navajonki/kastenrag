@@ -9,13 +9,21 @@ transcriber:
 
 # Chunking configuration
 chunker:
+  type: "atomic"  # Can be "sliding_window" or "atomic"
   window_size: 1000
   overlap: 100
   boundary_rules:
     - "sentence"
     - "paragraph"
-  first_pass_prompt_template: "Given the following text, identify all atomic facts:\n\n{text}\n\nAtomic facts:"
-  second_pass_prompt_template: "For each atomic fact, replace all pronouns with their full entity references:\n\n{facts}\n\nSelf-contained facts:"
+  # Use templated prompts (preferred approach)
+  first_pass_template_name: "detailed"  # Options: default, concise, detailed, entity_focused, hierarchical, academic, conversational
+  second_pass_template_name: "detailed_refinement"  # Options: default, simplified, detailed_refinement
+  # Legacy prompt templates (kept for backward compatibility)
+  # first_pass_prompt_template: "You are an expert at extracting atomic facts from text. An atomic fact is a single, self-contained piece of information that can stand on its own without requiring additional context.\n\nExtract atomic facts from the following text. For each fact:\n1. Make it stand alone (a reader should understand it with no other context)\n2. Include full entity names and remove pronouns (replace \"he\", \"she\", \"it\", \"they\" with the actual entity)\n3. Express exactly one idea per fact\n4. Maintain factual accuracy\n\nText: {text}\n\nExtract atomic facts in this format:\nFACT 1: [The atomic fact with all pronouns resolved]\nFACT 2: [Another atomic fact with all pronouns resolved]\n..."
+  # second_pass_prompt_template: "You are an expert at ensuring facts are truly atomic and self-contained.\n\nReview these extracted facts and improve them to be completely self-contained.\nFor each fact:\n1. Verify it expresses exactly ONE idea\n2. Ensure ALL pronouns are replaced with explicit entities\n3. Add any missing context that's needed to understand the fact\n4. If a fact contains multiple ideas, split it into multiple facts\n5. Preserve the original meaning while making the fact stand alone\n\nOriginal facts:\n{facts}\n\nImproved atomic facts:"
+  entity_resolution: true
+  topic_tagging: true
+  relationship_extraction: true
 
 # Embedding configuration
 embedding:

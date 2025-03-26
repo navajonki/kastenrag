@@ -9,6 +9,8 @@ from .config.loader import load_and_validate_config
 from .config.models import SystemConfig
 from .pipeline.orchestrator import create_pipeline
 from .utils.logging import setup_logging
+from .prompts.config import initialize_templates
+from .prompts.registry import register_default_templates
 
 
 def run_pipeline(config: SystemConfig, audio_path: str) -> Dict:
@@ -56,8 +58,18 @@ def main():
     parser.add_argument("--config", type=str, help="Path to configuration file")
     parser.add_argument("--audio", type=str, required=True, help="Path to audio file to process")
     parser.add_argument("--output-dir", type=str, help="Directory for outputs")
+    parser.add_argument("--template-dir", type=str, help="Directory for custom prompt templates")
     
     args = parser.parse_args()
+    
+    # Initialize prompt templates
+    register_default_templates()  # Register built-in templates
+    initialize_templates()        # Load templates from system and user directories
+    
+    # Load additional templates from user-specified directory if provided
+    if args.template_dir:
+        from .prompts.config import load_user_templates
+        load_user_templates(args.template_dir)
     
     # Load configuration
     config = load_and_validate_config(config_path=args.config)

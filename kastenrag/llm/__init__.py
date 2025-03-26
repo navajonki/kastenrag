@@ -1,6 +1,6 @@
 """LLM client implementations for KastenRAG."""
 
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, List
 import os
 import json
 import importlib
@@ -143,6 +143,23 @@ class MockLLMClient:
 # Global LLM client instance
 _llm_client = None
 
+# Available models by provider
+_AVAILABLE_MODELS = {
+    "mock": [
+        {"id": "mock-gpt-4", "name": "Mock GPT-4", "description": "Mock implementation of GPT-4"},
+        {"id": "mock-claude", "name": "Mock Claude", "description": "Mock implementation of Claude"}
+    ],
+    "openai": [
+        {"id": "gpt-4", "name": "GPT-4", "description": "OpenAI GPT-4 model"},
+        {"id": "gpt-4-turbo", "name": "GPT-4 Turbo", "description": "OpenAI GPT-4 Turbo model"},
+        {"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "description": "OpenAI GPT-3.5 Turbo model"}
+    ],
+    "replicate": [
+        {"id": "llama-3-70b", "name": "Llama 3 70B", "description": "Meta's Llama 3 70B model"},
+        {"id": "claude-3-opus", "name": "Claude 3 Opus", "description": "Anthropic's Claude 3 Opus model"}
+    ]
+}
+
 
 def create_llm_client(
     provider: str = "mock",
@@ -225,3 +242,35 @@ def set_llm_client(client: Any) -> None:
     """
     global _llm_client
     _llm_client = client
+    
+def get_available_providers() -> List[str]:
+    """
+    Get a list of available LLM providers.
+    
+    Returns:
+        List of provider names
+    """
+    return list(_AVAILABLE_MODELS.keys())
+
+def get_available_models(provider: Optional[str] = None) -> List[Dict[str, str]]:
+    """
+    Get a list of available models for a provider or all providers.
+    
+    Args:
+        provider: Optional provider name to filter models
+        
+    Returns:
+        List of model information dictionaries with id, name, and description
+    """
+    if provider:
+        return _AVAILABLE_MODELS.get(provider.lower(), [])
+    
+    # If no provider specified, return all models with provider info
+    all_models = []
+    for provider_name, models in _AVAILABLE_MODELS.items():
+        for model in models:
+            model_with_provider = model.copy()
+            model_with_provider["provider"] = provider_name
+            all_models.append(model_with_provider)
+    
+    return all_models
