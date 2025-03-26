@@ -692,6 +692,9 @@ def view_pipeline_run(run_id):
         
         with open(run_file, 'r') as f:
             run_data = json.load(f)
+            
+        print("Loaded run data:", json.dumps(run_data, indent=2)[:500] + "... (truncated)")
+        print("Keys in results:", run_data.get("results", {}).keys())
         
         # Get the pipeline data
         pipeline_id = run_data.get("pipeline_id")
@@ -762,7 +765,9 @@ def run_pipeline(pipeline_id):
             return jsonify({"error": "Failed to initialize pipeline"}), 500
         
         # Execute the pipeline
+        print("Executing pipeline with nodes:", list(executor.nodes.keys()))
         result = executor.execute()
+        print("Pipeline execution result:", json.dumps(result, indent=2)[:500] + "... (truncated)")
         
         # Generate a run ID
         run_id = str(uuid.uuid4())

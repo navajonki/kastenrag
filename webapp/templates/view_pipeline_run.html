@@ -243,7 +243,15 @@
         <section id="node-outputs" class="mb-5">
             <h2 class="section-title">Node Outputs</h2>
             
-            {% for node_id in run.results.execution_order %}
+            <!-- Debug information -->
+            <div class="alert alert-info">
+                <p><strong>Debug Information:</strong></p>
+                <p>execution_order: {{ run.results.execution_order|default('Not found', true) }}</p>
+                <p>results keys: {{ run.results.results.keys()|default('No results found', true)|list }}</p>
+                <p>errors keys: {{ run.results.errors.keys()|default('No errors found', true)|list }}</p>
+            </div>
+            
+            {% for node_id in run.results.execution_order|default([], true) %}
             <div class="node-result mb-4">
                 <div class="node-result-header">
                     <h5 class="mb-0">Node: {{ node_id }}</h5>
