@@ -262,9 +262,115 @@
                     
                     {% if node_id in run.results.results %}
                     <h6>Output:</h6>
-                    <div class="json-viewer">
-                        <pre id="output-{{ node_id }}">{{ run.results.results[node_id] | tojson(indent=2) }}</pre>
-                    </div>
+                    
+                    {% set output = run.results.results[node_id] %}
+                    
+                    {% if 'visualization' in output %}
+                        <!-- Handle visualizer node output -->
+                        {% set viz = output.visualization %}
+                        {% set processed = viz.processed_data %}
+                        
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">{{ processed.title }}</h5>
+                                <p class="text-muted mb-0">{{ processed.summary }}</p>
+                            </div>
+                            <div class="card-body">
+                                {% if viz.type == 'table' and processed.elements %}
+                                    <!-- Table visualization -->
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Content</th>
+                                                    <th>Word Count</th>
+                                                    <th>Metadata</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for element in processed.elements %}
+                                                <tr>
+                                                    <td>{{ element.id }}</td>
+                                                    <td>
+                                                        <div class="text-truncate" style="max-width: 300px;">
+                                                            {{ element.content }}
+                                                        </div>
+                                                        <button class="btn btn-sm btn-link" data-bs-toggle="modal" data-bs-target="#contentModal-{{ node_id }}-{{ loop.index }}">
+                                                            View Full
+                                                        </button>
+                                                        
+                                                        <!-- Modal for full content -->
+                                                        <div class="modal fade" id="contentModal-{{ node_id }}-{{ loop.index }}" tabindex="-1" aria-labelledby="contentModalLabel-{{ node_id }}-{{ loop.index }}" aria-hidden="true">
+                                                            <div class="modal-dialog modal-lg">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header">
+                                                                        <h5 class="modal-title" id="contentModalLabel-{{ node_id }}-{{ loop.index }}">Full Content</h5>
+                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                    </div>
+                                                                    <div class="modal-body">
+                                                                        <pre>{{ element.full_content }}</pre>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ element.metadata['Word Count'] }}</td>
+                                                    <td>
+                                                        {% if element.metadata.Entities %}
+                                                            <strong>Entities:</strong> {{ element.metadata.Entities }}<br>
+                                                        {% endif %}
+                                                        {% if element.metadata.Topics %}
+                                                            <strong>Topics:</strong> {{ element.metadata.Topics }}
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                {% elif viz.type == 'graph' and processed.elements.nodes %}
+                                    <!-- Graph visualization -->
+                                    <div id="graph-{{ node_id }}" style="height: 400px; border: 1px solid #ddd; border-radius: 4px;"></div>
+                                    <script>
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            // Create a visualization network
+                                            const container = document.getElementById('graph-{{ node_id }}');
+                                            const graphData = {{ processed.elements|tojson }};
+                                            
+                                            // Create a placeholder message for now
+                                            container.innerHTML = `
+                                                <div class="d-flex h-100 align-items-center justify-content-center">
+                                                    <div class="text-center">
+                                                        <i class="bi bi-diagram-3" style="font-size: 3rem;"></i>
+                                                        <p class="mt-3">Graph visualization available in the full implementation.</p>
+                                                        <p>Contains ${graphData.nodes.length} nodes and ${graphData.edges.length} edges.</p>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        });
+                                    </script>
+                                    
+                                {% elif viz.type == 'json' %}
+                                    <!-- JSON visualization -->
+                                    <div class="json-viewer">
+                                        <pre>{{ processed.elements|tojson(indent=2) }}</pre>
+                                    </div>
+                                {% else %}
+                                    <!-- Generic visualization -->
+                                    <div class="alert alert-info">
+                                        No visualization available for this data type or empty data.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Generic node output -->
+                        <div class="json-viewer">
+                            <pre id="output-{{ node_id }}">{{ output | tojson(indent=2) }}</pre>
+                        </div>
+                    {% endif %}
                     {% endif %}
                 </div>
             </div>

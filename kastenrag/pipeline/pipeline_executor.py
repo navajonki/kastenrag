@@ -360,15 +360,116 @@ class VisualizerNode(PipelineNode):
             data = self.input_data['data']
             visualization_type = self.properties.get('visualization-type', 'table')
             
-            # No real output, this node is just for visualization
-            # In a real implementation, we might generate HTML or other output
+            # Process the data based on visualization type
+            visualization_data = self._prepare_visualization(data, visualization_type)
             
-            self.output_data = {'visualization': {'type': visualization_type, 'data': data}}
+            self.output_data = {
+                'visualization': {
+                    'type': visualization_type, 
+                    'data': data,
+                    'processed_data': visualization_data
+                }
+            }
             self.executed = True
             return self.output_data
         except Exception as e:
             self.error = str(e)
             raise e
+    
+    def _prepare_visualization(self, data: Any, visualization_type: str) -> Dict[str, Any]:
+        """
+        Process input data for visualization.
+        
+        Args:
+            data: The input data (chunks, stored IDs, etc.)
+            visualization_type: The type of visualization (table, graph, json)
+            
+        Returns:
+            Processed data ready for visualization
+        """
+        result = {
+            'title': 'Visualization Results',
+            'summary': '',
+            'visualization_type': visualization_type,
+            'elements': []
+        }
+        
+        # Handle different input types
+        if isinstance(data, list):
+            # Assuming this is a chunks list
+            if data and isinstance(data[0], dict) and 'text' in data[0]:
+                # This is likely a list of chunks
+                result['title'] = f'Chunk Visualization ({len(data)} chunks)'
+                result['summary'] = f'Displaying {len(data)} chunks of text content'
+                
+                if visualization_type == 'table':
+                    # Format data for table visualization
+                    for i, chunk in enumerate(data):
+                        metadata = chunk.get('metadata', {})
+                        element = {
+                            'id': metadata.get('chunk_id', f'chunk-{i}'),
+                            'content': chunk.get('text', '')[:200] + ('...' if len(chunk.get('text', '')) > 200 else ''),
+                            'full_content': chunk.get('text', ''),
+                            'metadata': {
+                                'Word Count': metadata.get('word_count', len(chunk.get('text', '').split())),
+                                'Entities': ', '.join(metadata.get('entities', [])),
+                                'Topics': ', '.join(metadata.get('topics', []))
+                            }
+                        }
+                        result['elements'].append(element)
+                
+                elif visualization_type == 'graph':
+                    # Create a graph visualization of relationships between chunks
+                    nodes = []
+                    edges = []
+                    
+                    for i, chunk in enumerate(data):
+                        metadata = chunk.get('metadata', {})
+                        chunk_id = metadata.get('chunk_id', f'chunk-{i}')
+                        
+                        # Add node
+                        nodes.append({
+                            'id': chunk_id,
+                            'label': f"Chunk {i+1}",
+                            'title': chunk.get('text', '')[:100] + '...',
+                            'data': {
+                                'text': chunk.get('text', ''),
+                                'entities': metadata.get('entities', []),
+                                'topics': metadata.get('topics', [])
+                            }
+                        })
+                        
+                        # Add edges from relationships
+                        for rel in metadata.get('relationships', []):
+                            if rel.get('target') and rel.get('type'):
+                                edges.append({
+                                    'from': chunk_id,
+                                    'to': rel.get('target'),
+                                    'label': rel.get('type')
+                                })
+                    
+                    result['elements'] = {
+                        'nodes': nodes,
+                        'edges': edges
+                    }
+                
+                elif visualization_type == 'json':
+                    # Just format the raw JSON for inspection
+                    result['elements'] = data
+                
+            else:
+                # Generic list - could be stored IDs
+                result['title'] = f'List Data ({len(data)} items)'
+                result['summary'] = f'Displaying {len(data)} items'
+                result['elements'] = data
+                
+        else:
+            # Handle non-list data
+            result['title'] = 'Raw Data Visualization'
+            result['summary'] = 'Displaying raw data object'
+            result['elements'] = data
+        
+        return result
 
 
 class PipelineExecutor:
